@@ -1,0 +1,121 @@
+import { useState, useEffect } from 'react';
+import { FileItem } from './PreviewPane';
+
+interface FileExplorerProps {
+  onFileSelect: (file: FileItem) => void;
+}
+
+export function FileExplorer({ onFileSelect }: FileExplorerProps) {
+  const [currentPath, setCurrentPath] = useState('/');
+  const [items, setItems] = useState<FileItem[]>([]);
+  const [loading, setLoading] = useState(false);
+
+  const loadDirectory = async (dirPath: string) => {
+    setLoading(true);
+    try {
+      const res = await fetch(`/api/explore/list?path=${encodeURIComponent(dirPath)}`);
+      const data = await res.json();
+      setItems(data.items || []);
+      // 使用服务器返回的当前路径
+      if (data.currentPath) {
+        setCurrentPath(data.currentPath);
+      } else {
+        setCurrentPath(dirPath);
+      }
+    } catch (error) {
+      console.error('Failed to load directory:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadDirectory(currentPath);
+  }, []);
+
+  const navigateTo = (path: string) => {
+    loadDirectory(path);
+  };
+
+  const goUp = () => {
+    const parentPath = currentPath.split('/').slice(0, -1).join('/') || '/';
+    loadDirectory(parentPath);
+  };
+
+  const handleItemClick = (item: FileItem) => {
+    if (item.type === 'directory') {
+      navigateTo(item.path);
+    } else {
+      onFileSelect(item);
+    }
+  };
+
+  return (
+    <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-800">
+      {/* 路径导航 */}
+      <div className="flex items-center gap-2 mb-3">
+        <button
+          onClick={() => navigateTo('/')}
+          className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 dark:text-white"
+          title="Root"
+        >
+          /
+        </button>
+        <button
+          onClick={goUp}
+          className="px-2 py-1 text-xs bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600 dark:text-white"
+          title="Go up"
+        >
+          ↑
+        </button>
+        <input
+          type="text"
+          value={currentPath}
+          onChange={(e) => setCurrentPath(e.target.value)}
+          onKeyDown={(e) => e.key === 'Enter' && navigateTo(currentPath)}
+          className="flex-1 px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white"
+          placeholder="Enter path..."
+        />
+        <button
+          onClick={() => loadDirectory(currentPath)}
+          className="p-1 hover:bg-gray-200 dark:hover:bg-gray-600 rounded"
+          title="Refresh"
+        >
+          <svg className="w-4 h-4 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+          </svg>
+        </button>
+      </div>
+
+      {/* 文件列表 */}
+      <div className="max-h-48 overflow-auto">
+        {loading ? (
+          <div className="text-center py-4 dark:text-white">Loading...</div>
+        ) : items.length === 0 ? (
+          <div className="text-center py-4 text-gray-400 dark:text-gray-500">Empty directory</div>
+        ) : (
+          <div className="space-y-1">
+            {items.map((item, index) => (
+              <div
+                key={`${item.path}-${index}`}
+                onClick={() => handleItemClick(item)}
+                className="flex items-center gap-2 p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded cursor-pointer dark:text-white"
+              >
+                {item.type === 'directory' ? (
+                  <svg className="w-4 h-4 text-yellow-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M2 6a2 2 0 012-2h5l2 2h5a2 2 0 012 2v6a2 2 0 01-2 2H4a2 2 0 01-2-2V6z" />
+                  </svg>
+                ) : (
+                  <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+                  </svg>
+                )}
+                <span className="text-sm truncate">{item.name}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

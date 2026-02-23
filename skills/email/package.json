@@ -1,0 +1,34 @@
+{
+  "name": "email-skill",
+  "version": "1.0.0",
+  "description": "IMAP/SMTP email tool for MantisBot. Works with Gmail, Outlook, 163.com, 126.com, QQ Mail, Feishu Mail, and any standard IMAP/SMTP server.",
+  "main": "scripts/imap.js",
+  "scripts": {
+    "check": "node scripts/imap.js check",
+    "fetch": "node scripts/imap.js fetch",
+    "search": "node scripts/imap.js search",
+    "send": "node scripts/smtp.js send",
+    "test-imap": "node scripts/imap.js list-mailboxes",
+    "test-smtp": "node scripts/smtp.js verify"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "imap": "^0.8.19",
+    "mailparser": "^3.9.3",
+    "nodemailer": "^6.9.8"
+  },
+  "keywords": [
+    "imap",
+    "smtp",
+    "email",
+    "163.com",
+    "126.com",
+    "qq.com",
+    "gmail",
+    "outlook",
+    "feishu",
+    "skill"
+  ],
+  "author": "MantisBot",
+  "license": "MIT"
+}

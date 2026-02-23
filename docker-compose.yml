@@ -1,0 +1,61 @@
+services:
+  mantis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - linux/arm64/v8
+    ports:
+      - "8118:8118"
+    volumes:
+      # 项目内置目录
+      - ./config:/app/config:rw
+      - ./data:/app/data:rw
+      - ./skills:/app/skills:rw
+      # Python 虚拟环境（持久化用户安装的包）
+      - python-venv:/app/python-venv
+      # Playwright 浏览器缓存（持久化 Chromium 等浏览器）
+      - playwright-cache:/root/.cache/ms-playwright
+      # 用户主目录（用于访问宿主机文件）
+      - ~/:/root:rw
+      # Docker socket（用于 DDNSTO 等需要在容器内运行 Docker 的功能）
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - NODE_ENV=production
+      - CONFIG_PATH=/app/config/config.json
+    restart: unless-stopped
+
+  web-ui:
+    build:
+      context: ./web-ui
+      dockerfile: Dockerfile
+    ports:
+      - "3091:80"
+    environment:
+      - VITE_API_URL=http://localhost:8118
+    restart: unless-stopped
+    depends_on:
+      - mantis
+
+  # 本地文档编辑器 (onlyoffice-web-local)
+  # 用于单用户文档编辑，文件在浏览器本地处理，隐私保护
+  onlyoffice-local:
+    image: onlyoffice-local:latest
+    ports:
+      - "8081:80"
+    volumes:
+      # 挂载自定义 CORS 配置
+      - ./config/onlyoffice/nginx.cors.conf:/etc/nginx/nginx.conf:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+# Docker 命名卷（用于持久化）
+volumes:
+  python-venv:
+    name: mantis-python-venv
+  playwright-cache:
+    name: mantis-playwright-cache

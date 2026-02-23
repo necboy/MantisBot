@@ -1,0 +1,188 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background-color: #f9fafb;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #111827;
+    color: #f9fafb;
+  }
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Markdown 样式 */
+.prose {
+  line-height: 1.6;
+}
+
+.prose h1, .prose h2, .prose h3, .prose h4 {
+  margin-top: 1.5em;
+  margin-bottom: 0.5em;
+  font-weight: 600;
+}
+
+.prose h1 { font-size: 1.5em; }
+.prose h2 { font-size: 1.3em; }
+.prose h3 { font-size: 1.1em; }
+
+.prose p {
+  margin-bottom: 0.75em;
+}
+
+.prose ul, .prose ol {
+  margin-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+
+.prose li {
+  margin-bottom: 0.25em;
+}
+
+.prose code {
+  background-color: #f3f4f6;
+  padding: 0.2em 0.4em;
+  border-radius: 0.25em;
+  font-size: 0.9em;
+  font-family: 'Monaco', 'Courier New', monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+  .prose code {
+    background-color: #374151;
+  }
+}
+
+.prose pre {
+  background-color: #1f2937;
+  color: #f9fafb;
+  padding: 1em;
+  border-radius: 0.5em;
+  overflow-x: auto;
+  margin-bottom: 0.75em;
+}
+
+.prose pre code {
+  background-color: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.prose blockquote {
+  border-left: 4px solid #d1d5db;
+  padding-left: 1em;
+  margin-left: 0;
+  margin-bottom: 0.75em;
+  color: #6b7280;
+}
+
+@media (prefers-color-scheme: dark) {
+  .prose blockquote {
+    border-left-color: #4b5563;
+    color: #9ca3af;
+  }
+}
+
+.prose a {
+  color: #3b82f6;
+  text-decoration: underline;
+}
+
+.prose a:hover {
+  color: #2563eb;
+}
+
+.prose strong {
+  font-weight: 600;
+}
+
+.prose em {
+  font-style: italic;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #d1d5db;
+  border-radius: 3px;
+}
+
+@media (prefers-color-scheme: dark) {
+  ::-webkit-scrollbar-thumb {
+    background: #4b5563;
+  }
+}
+
+/* Terminal 样式 - macOS zsh 风格 */
+.terminal-window {
+  background-color: #1e1e1e;
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+}
+
+.terminal-line {
+  line-height: 1.6;
+}
+
+/* 终端中的代码块 */
+.terminal-code {
+  font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+/* 终端滚动条 - 更暗的颜色 */
+.terminal-scrollbar::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.terminal-scrollbar::-webkit-scrollbar-track {
+  background: #1e1e1e;
+}
+
+.terminal-scrollbar::-webkit-scrollbar-thumb {
+  background: #3a3a3a;
+  border-radius: 4px;
+}
+
+.terminal-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #4a4a4a;
+}
+
+/* PDF 预览样式 */
+.pdf-page-canvas {
+  background: white;
+  max-width: 100%;
+  height: auto;
+  transition: opacity 0.3s ease;
+}
+
+.pdf-page-canvas:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}

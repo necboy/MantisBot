@@ -1,0 +1,169 @@
+{
+  "app": {
+    "title": "MantisBot",
+    "newChat": "New Chat",
+    "scheduledTasks": "Scheduled Tasks",
+    "settings": "Settings",
+    "startNewChat": "Start a new conversation",
+    "thinking": "Thinking...",
+    "loadingSession": "Loading conversation...",
+    "send": "Send",
+    "stop": "Stop",
+    "inputPlaceholder": "Type a message...",
+    "computer": "Computer",
+    "closePanel": "Close computer panel",
+    "openPanel": "Open computer panel",
+    "intranetTunnel": "Tunnel",
+    "intranetConfig": "Intranet Tunnel Config",
+    "workDir": "Work Dir",
+    "enterWorkDir": "Enter new working directory path",
+    "clickToChange": "Click to change working directory"
+  },
+  "backend": {
+    "checking": "Connecting to backend...",
+    "reconnecting": "Backend may be restarting, retrying in 5 seconds..."
+  },
+  "notification": {
+    "cronNotification": "Cron Notifications"
+  },
+  "file": {
+    "openInCanvas": "Open in Canvas",
+    "download": "Download",
+    "referencedFiles": "Referenced Files/Directories"
+  },
+  "tool": {
+    "read": "Read File",
+    "write": "Write File",
+    "edit": "Edit File",
+    "exec": "Execute Command",
+    "readSkill": "Read Skill",
+    "sendFile": "Send File",
+    "memorySearch": "Search Memory",
+    "document": "Process Document",
+    "logger": "Log",
+    "browserNavigate": "Browse",
+    "browserScreenshot": "Screenshot",
+    "browserClick": "Click Element",
+    "browserType": "Type Text",
+    "browserScroll": "Scroll Page",
+    "browserWait": "Wait Element",
+    "cronManage": "Manage Cron Jobs"
+  },
+  "toolArgs": {
+    "reading": "Reading {{filename}}",
+    "writing": "Writing {{filename}}",
+    "editing": "Editing {{filename}}",
+    "executing": "Executing: {{command}}",
+    "visiting": "Visiting: {{url}}",
+    "searching": "Searching: {{query}}"
+  },
+  "settings": {
+    "title": "Settings",
+    "skillManagement": "Skill Management",
+    "modelConfig": "Model Config",
+    "agentProfile": "Agent Profile",
+    "evolution": "Evolution History",
+    "allowedPaths": "Allowed Paths",
+    "channelManagement": "Channels"
+  },
+  "channelManagement": {
+    "channels": "Channel Management",
+    "addChannel": "Add Channel",
+    "editChannel": "Edit Channel",
+    "deleteChannel": "Delete Channel",
+    "deleteChannelConfirm": "Are you sure you want to delete this channel?",
+    "testConnection": "Test Connection",
+    "testing": "Testing...",
+    "connectionSuccess": "Connection successful",
+    "connectionFailed": "Connection failed",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "channelStatus": {
+      "disconnected": "Disconnected",
+      "connecting": "Connecting",
+      "connected": "Connected",
+      "error": "Error"
+    },
+    "channelForm": {
+      "selectChannel": "Select Channel Type",
+      "enabled": "Enabled",
+      "config": "Configuration",
+      "required": "Required"
+    }
+  },
+  "channel": {
+    "httpWs": "Web UI",
+    "feishu": "Feishu",
+    "slack": "Slack",
+    "dingtalk": "DingTalk",
+    "wecom": "WeCom",
+    "whatsapp": "WhatsApp"
+  },
+  "language": {
+    "chinese": "中文",
+    "english": "English",
+    "selectLanguage": "Select Language"
+  },
+  "confirm": {
+    "deleteSession": "Are you sure you want to delete this conversation?"
+  },
+  "error": {
+    "sendFailed": "Failed to send message, please try again",
+    "networkError": "Network connection failed, please check network settings",
+    "timeout": "Request timeout, please try again later",
+    "setWorkDirFailed": "Failed to set working directory",
+    "addPermissionFailed": "Failed to add directory permission",
+    "getPermissionFailed": "Failed to get directory permissions"
+  },
+  "success": {
+    "permissionAdded": "Directory permission added successfully, working directory changed"
+  },
+  "permission": {
+    "title": "Tool Permission Request",
+    "tool": "Tool",
+    "reason": "Reason",
+    "parameters": "Parameters",
+    "deny": "Deny",
+    "allow": "Allow",
+    "processing": "Processing...",
+    "dangerHigh": "This operation may cause data loss",
+    "dangerMedium": "This operation will execute commands",
+    "dangerLow": "Confirm this operation",
+    "askQuestion": "Please answer the following questions"
+  },
+  "canvas": {
+    "title": "My Computer",
+    "preview": "Canvas",
+    "browser": "Browser",
+    "terminal": "Terminal",
+    "nas": "NAS",
+    "screenshot": "Screenshots",
+    "livePreview": "Live Preview",
+    "noScreenshots": "No browser screenshots yet",
+    "screenshotHint": "When the Agent operates the browser, screenshots will appear here automatically",
+    "latest": "Latest",
+    "clickToEnlarge": "Click to enlarge",
+    "clickToOpen": "Click to open in live preview",
+    "noUrlAvailable": "No URL available",
+    "iframeBlocked": "⚠️ Cannot embed this website (iframe blocked), showing latest screenshot",
+    "noOutput": "No command output yet",
+    "outputHint": "When the Agent executes commands, output will appear here automatically",
+    "browserScreenshot": "Browser Screenshot"
+  },
+  "skills": {
+    "expandAll": "Expand All",
+    "collapseAll": "Collapse All",
+    "total": "Total",
+    "skillsCount": " skills",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "searchPlaceholder": "Search skills..."
+  },
+  "approval": {
+    "title": "Approval Mode",
+    "auto": "Auto Approve",
+    "dangerous": "Dangerous Only",
+    "ask": "Ask Always"
+  }
+}

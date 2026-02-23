@@ -1,0 +1,607 @@
+import { useState, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import { FileItem, PreviewPane } from './PreviewPane';
+import { FileExplorer } from './FileExplorer';
+import { FileManager } from './FileManager';
+import { Monitor, Globe, FileText, HardDrive, Image, ExternalLink } from 'lucide-react';
+
+export type { FileItem };
+
+// 浏览器截图
+export interface BrowserSnapshot {
+  id: string;
+  url: string;
+  timestamp: number;
+  screenshot: string;  // base64 或 URL
+  title?: string;
+}
+
+// 终端输出
+export interface TerminalOutput {
+  id: string;
+  command: string;
+  output: string;
+  error?: string;
+  timestamp: number;
+}
+
+type CanvasMode = 'preview' | 'files' | 'browser' | 'terminal';
+type BrowserViewMode = 'screenshots' | 'live';
+
+interface CanvasPanelProps {
+  isOpen: boolean;
+  onClose: () => void;
+  currentFile: FileItem | null;
+  onFileSelect: (file: FileItem) => void;
+  browserSnapshots?: BrowserSnapshot[];
+  terminalOutputs?: TerminalOutput[];
+  forceMode?: CanvasMode;
+  onClearForceMode?: () => void;
+  homeDirectory?: string;
+  officePreviewServer?: string;
+  serverUrl?: string;
+  // 新增：添加文件引用回调
+  onAddReference?: (item: { path: string; name: string; type: 'file' | 'directory'; size?: number; ext?: string }) => void;
+  // 新增：工作目录变更回调
+  onWorkDirChange?: (path: string) => void;
+  // 新增：权限错误回调
+  onPermissionError?: (path: string, onSuccess: () => void) => void;
+  // 多标签预览：打开的文件列表
+  openFiles?: FileItem[];
+  onOpenFilesChange?: (files: FileItem[]) => void;
+  onCurrentFileChange?: (file: FileItem | null) => void;
+}
+
+export function CanvasPanel({
+  isOpen,
+  onClose,
+  currentFile,
+  onFileSelect,
+  browserSnapshots = [],
+  terminalOutputs = [],
+  forceMode,
+  onClearForceMode,
+  homeDirectory = '/',
+  officePreviewServer,
+  serverUrl,
+  onAddReference,
+  onWorkDirChange,
+  onPermissionError,
+  openFiles = [],
+  onOpenFilesChange,
+  onCurrentFileChange
+}: CanvasPanelProps) {
+  const { t } = useTranslation();
+
+  // 默认宽度为屏幕宽度的 40%
+  const [width, setWidth] = useState(() => Math.floor(window.innerWidth * 0.4));
+
+  // 响应窗口大小变化，自动调整宽度（保持比例）
+  useEffect(() => {
+    const handleResize = () => {
+      setWidth(prevWidth => {
+        const newWidth = Math.floor(window.innerWidth * 0.4);
+        // 如果当前宽度超出新窗口的合理范围，则更新
+        const maxWidth = Math.floor(window.innerWidth * 0.8);
+        if (prevWidth > maxWidth || prevWidth < 300) {
+          return Math.max(300, Math.min(maxWidth, newWidth));
+        }
+        return prevWidth;
+      });
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  const [internalMode, setMode] = useState<CanvasMode>('files');
+  // 保存文件管理器的当前路径（使用 homeDirectory 作为初始值）
+  const [fileManagerPath, setFileManagerPath] = useState(homeDirectory);
+  // 浏览器视图模式：截图 or 实时预览
+  const [browserViewMode, setBrowserViewMode] = useState<BrowserViewMode>('screenshots');
+  // 实时预览的 URL
+  const [livePreviewUrl, setLivePreviewUrl] = useState<string>('');
+  // iframe 加载错误
+  const [iframeError, setIframeError] = useState(false);
+  // 放大的截图
+  const [enlargedSnapshot, setEnlargedSnapshot] = useState<BrowserSnapshot | null>(null);
+
+  // 终端输出自动滚动相关
+  const terminalEndRef = useRef<HTMLDivElement>(null);
+  const terminalContainerRef = useRef<HTMLDivElement>(null);
+  const [terminalAutoScroll, setTerminalAutoScroll] = useState(true);
+
+  // 浏览器截图自动滚动相关
+  const browserContainerRef = useRef<HTMLDivElement>(null);
+  const [browserAutoScroll, setBrowserAutoScroll] = useState(true);
+
+  // 当 homeDirectory 从 API 获取后更新时，同步到 fileManagerPath
+  useEffect(() => {
+    if (homeDirectory && homeDirectory !== '/') {
+      setFileManagerPath(homeDirectory);
+    }
+  }, [homeDirectory]);
+
+  // 处理文件管理器路径变化，同时更新工作目录
+  const handleFileManagerPathChange = (newPath: string) => {
+    setFileManagerPath(newPath);
+    // 通知父组件更新工作目录
+    if (onWorkDirChange) {
+      onWorkDirChange(newPath);
+    }
+  };
+
+  // 当有新的浏览器截图时，更新实时预览的 URL
+  useEffect(() => {
+    if (browserSnapshots.length > 0) {
+      const latestSnapshot = browserSnapshots[browserSnapshots.length - 1];
+      setLivePreviewUrl(latestSnapshot.url);
+      setIframeError(false);  // 重置错误状态
+    }
+  }, [browserSnapshots]);
+
+  // 如果有强制模式，使用它
+  const mode = forceMode || internalMode;
+
+  // 处理标签切换（清除强制模式）
+  const handleModeChange = (newMode: CanvasMode) => {
+    setMode(newMode);
+    if (onClearForceMode) {
+      onClearForceMode();
+    }
+  };
+
+  // 终端输出滚动处理：检测用户是否滚动到底部
+  const handleTerminalScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+    setTerminalAutoScroll(isAtBottom);
+  };
+
+  // 浏览器截图滚动处理：检测用户是否滚动到底部
+  const handleBrowserScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
+    const isAtBottom = scrollHeight - scrollTop - clientHeight < 100;
+    setBrowserAutoScroll(isAtBottom);
+  };
+
+  // 终端输出自动滚动
+  useEffect(() => {
+    if (terminalAutoScroll && terminalEndRef.current) {
+      terminalEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [terminalOutputs, terminalAutoScroll]);
+
+  // 浏览器截图自动滚动 - 当切换到截图模式时自动滚动到顶部（最新截图）
+  useEffect(() => {
+    if (mode === 'browser' && browserViewMode === 'screenshots' && browserAutoScroll) {
+      setTimeout(() => {
+        if (browserContainerRef.current) {
+          // 最新的截图在顶部显示，所以滚动到顶部
+          browserContainerRef.current.scrollTop = 0;
+        }
+      }, 100);
+    }
+  }, [browserSnapshots, mode, browserViewMode, browserAutoScroll]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 flex flex-col shadow-xl flex-shrink-0"
+      style={{ width: `${width}px`, minWidth: '300px' }}
+    >
+      {/* 拖拽调整宽度 */}
+      <div
+        className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary-500 transition-colors"
+        onMouseDown={(e) => {
+          const startX = e.clientX;
+          const startWidth = width;
+          const onMouseMove = (e: MouseEvent) => {
+            // 最小 300px，最大屏幕宽度的 80%
+            const maxWidth = Math.floor(window.innerWidth * 0.8);
+            const newWidth = Math.max(300, Math.min(maxWidth, startWidth + e.clientX - startX));
+            setWidth(newWidth);
+          };
+          const onMouseUp = () => {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+          };
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        }}
+      />
+
+      {/* 头部 */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center gap-2">
+          <h2 className="text-lg font-semibold dark:text-white">{t('canvas.title')}</h2>
+
+          {/* 标签切换 */}
+          <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5 ml-4 gap-1">
+            <button
+              onClick={() => handleModeChange('preview')}
+              className={`flex items-center gap-1 px-3 py-1 text-sm rounded-md transition-colors ${
+                mode === 'preview'
+                  ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+              title={t('canvas.preview')}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">{t('canvas.preview')}</span>
+            </button>
+            <button
+              onClick={() => handleModeChange('browser')}
+              className={`flex items-center gap-1 px-3 py-1 text-sm rounded-md transition-colors relative ${
+                mode === 'browser'
+                  ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+              title={t('canvas.browser')}
+            >
+              <Globe className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">{t('canvas.browser')}</span>
+              {browserSnapshots.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {browserSnapshots.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => handleModeChange('terminal')}
+              className={`flex items-center gap-1 px-3 py-1 text-sm rounded-md transition-colors relative ${
+                mode === 'terminal'
+                  ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+              title={t('canvas.terminal')}
+            >
+              <Monitor className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">{t('canvas.terminal')}</span>
+              {terminalOutputs.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center">
+                  {terminalOutputs.length}
+                </span>
+              )}
+            </button>
+            <button
+              onClick={() => handleModeChange('files')}
+              className={`flex items-center gap-1 px-3 py-1 text-sm rounded-md transition-colors ${
+                mode === 'files'
+                  ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+              title={t('canvas.nas')}
+            >
+              <HardDrive className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">{t('canvas.nas')}</span>
+            </button>
+          </div>
+        </div>
+
+        <button
+          onClick={onClose}
+          className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+        >
+          <svg className="w-5 h-5 dark:text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      {/* 内容区域 */}
+      <div className="flex-1 overflow-hidden flex flex-col">
+        {mode === 'preview' ? (
+          <>
+            {/* 多标签栏 - 当有多个打开的文件时显示 */}
+            {openFiles.length > 1 && (
+              <div className="flex items-center gap-1 px-2 py-1 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 overflow-x-auto">
+                {openFiles.map((file) => (
+                  <div
+                    key={file.path}
+                    className={`group flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md cursor-pointer transition-colors ${
+                      currentFile?.path === file.path
+                        ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
+                    }`}
+                    onClick={() => onCurrentFileChange?.(file)}
+                  >
+                    <FileText className="w-3.5 h-3.5 flex-shrink-0" />
+                    <span className="truncate max-w-[120px]">{file.name}</span>
+                    <button
+                      className="ml-1 opacity-0 group-hover:opacity-100 hover:bg-gray-200 dark:hover:bg-gray-600 rounded p-0.5 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const newFiles = openFiles.filter(f => f.path !== file.path);
+                        onOpenFilesChange?.(newFiles);
+                        // 如果关闭的是当前文件，切换到第一个文件
+                        if (currentFile?.path === file.path && newFiles.length > 0) {
+                          onCurrentFileChange?.(newFiles[0]);
+                        } else if (newFiles.length === 0) {
+                          onCurrentFileChange?.(null);
+                        }
+                      }}
+                    >
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* 文件预览区域 */}
+            <div className="flex-1 overflow-auto">
+              <PreviewPane file={currentFile} officePreviewServer={officePreviewServer} />
+            </div>
+
+            {/* 文件浏览器 */}
+            <FileExplorer onFileSelect={onFileSelect} />
+          </>
+        ) : mode === 'files' ? (
+          /* 文件管理器 */
+          <FileManager
+            initialPath={fileManagerPath}
+            onPathChange={handleFileManagerPathChange}
+            onFileSelect={onFileSelect}
+            onSwitchToPreview={() => handleModeChange('preview')}
+            officePreviewServer={officePreviewServer}
+            serverUrl={serverUrl}
+            onAddReference={onAddReference}
+            onPermissionError={onPermissionError}
+          />
+        ) : mode === 'browser' ? (
+          /* 浏览器标签页 */
+          <div className="flex-1 overflow-hidden flex flex-col">
+            {/* 视图切换按钮 */}
+            <div className="flex items-center gap-2 p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+              <div className="flex items-center bg-white dark:bg-gray-900 rounded-lg p-0.5 gap-0.5">
+                <button
+                  onClick={() => setBrowserViewMode('screenshots')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    browserViewMode === 'screenshots'
+                      ? 'bg-primary-500 text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <Image className="w-3.5 h-3.5" />
+                  <span>{t('canvas.screenshot')}</span>
+                </button>
+                <button
+                  onClick={() => setBrowserViewMode('live')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    browserViewMode === 'live'
+                      ? 'bg-primary-500 text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  }`}
+                  disabled={!livePreviewUrl}
+                  title={!livePreviewUrl ? t('canvas.noUrlAvailable') : t('canvas.livePreview')}
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                  <span>{t('canvas.livePreview')}</span>
+                </button>
+              </div>
+              {browserViewMode === 'live' && livePreviewUrl && (
+                <span className="text-xs text-gray-500 dark:text-gray-400 truncate flex-1">
+                  {livePreviewUrl}
+                </span>
+              )}
+            </div>
+
+            {/* 内容区域 */}
+            <div
+              ref={browserContainerRef}
+              className="flex-1 overflow-auto"
+              onScroll={handleBrowserScroll}
+            >
+              {browserViewMode === 'screenshots' ? (
+                /* 截图模式 - 时间轴展示（最新在前） */
+                <div className="p-4">
+                  {browserSnapshots.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-gray-400">
+                      <div className="text-center">
+                        <Globe className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                        <p>{t('canvas.noScreenshots')}</p>
+                        <p className="text-sm mt-2">{t('canvas.screenshotHint')}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* 反转数组，最新的截图在最前面 */}
+                      {[...browserSnapshots].reverse().map((snapshot, index) => (
+                        <div key={snapshot.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                          {/* 截图标题 */}
+                          <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Globe className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm font-medium truncate dark:text-white">
+                                {snapshot.title || snapshot.url}
+                              </span>
+                              {index === 0 && (
+                                <span className="px-2 py-0.5 text-xs bg-primary-500 text-white rounded-full">
+                                  {t('canvas.latest')}
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(snapshot.timestamp).toLocaleTimeString()}
+                            </span>
+                          </div>
+                          {/* 截图内容 - 点击放大 */}
+                          <img
+                            src={snapshot.screenshot.startsWith('data:') ? snapshot.screenshot : `data:image/png;base64,${snapshot.screenshot}`}
+                            alt={snapshot.title || snapshot.url}
+                            className="w-full cursor-pointer hover:opacity-90 transition-opacity"
+                            onClick={() => setEnlargedSnapshot(snapshot)}
+                            title={t('canvas.clickToEnlarge')}
+                          />
+                          {/* URL - 点击跳转到实时预览 */}
+                          <div className="bg-gray-50 dark:bg-gray-800/50 px-3 py-1.5">
+                            <button
+                              onClick={() => {
+                                setLivePreviewUrl(snapshot.url);
+                                setBrowserViewMode('live');
+                                setIframeError(false);
+                              }}
+                              className="text-xs text-primary-500 dark:text-primary-400 hover:text-primary-600 dark:hover:text-primary-300 truncate w-full text-left transition-colors"
+                              title={t('canvas.clickToOpen')}
+                            >
+                              {snapshot.url}
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* 实时预览模式 */
+                <div className="h-full">
+                  {iframeError ? (
+                    /* iframe 失败，回退到最新截图 */
+                    <div className="h-full flex flex-col">
+                      <div className="bg-yellow-50 dark:bg-yellow-900/20 border-b border-yellow-200 dark:border-yellow-800 px-4 py-2">
+                        <p className="text-sm text-yellow-800 dark:text-yellow-200">
+                          {t('canvas.iframeBlocked')}
+                        </p>
+                      </div>
+                      <div className="flex-1 overflow-auto p-4">
+                        {browserSnapshots.length > 0 && (
+                          <img
+                            src={
+                              browserSnapshots[browserSnapshots.length - 1].screenshot.startsWith('data:')
+                                ? browserSnapshots[browserSnapshots.length - 1].screenshot
+                                : `data:image/png;base64,${browserSnapshots[browserSnapshots.length - 1].screenshot}`
+                            }
+                            alt="Latest screenshot"
+                            className="w-full"
+                          />
+                        )}
+                      </div>
+                    </div>
+                  ) : (
+                    /* 尝试 iframe 嵌入 */
+                    <iframe
+                      src={livePreviewUrl}
+                      className="w-full h-full border-0"
+                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                      onError={() => {
+                        console.log('[Canvas] iframe load error');
+                        setIframeError(true);
+                      }}
+                      onLoad={() => {
+                        console.log('[Canvas] iframe loaded successfully');
+                      }}
+                      title="Live Preview"
+                    />
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        ) : mode === 'terminal' ? (
+          /* 终端标签页 - macOS zsh 风格 */
+          <div
+            ref={terminalContainerRef}
+            className="flex-1 overflow-auto bg-[#1e1e1e] p-0 font-mono text-sm"
+            onScroll={handleTerminalScroll}
+          >
+            {terminalOutputs.length === 0 ? (
+              <div className="flex items-center justify-center h-full text-gray-500">
+                <div className="text-center">
+                  <Monitor className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                  <p>{t('canvas.noOutput')}</p>
+                  <p className="text-sm mt-2">{t('canvas.outputHint')}</p>
+                </div>
+              </div>
+            ) : (
+              <div className="p-4 space-y-6">
+                {terminalOutputs.map((output) => (
+                  <div key={output.id} className="space-y-1">
+                    {/* 命令提示符和命令 - zsh 风格 */}
+                    <div className="flex items-start gap-2">
+                      {/* 用户名@主机名 */}
+                      <span className="text-green-400 font-semibold">user@mantis</span>
+                      {/* 当前目录（简化显示） */}
+                      <span className="text-blue-400">~</span>
+                      {/* 提示符 */}
+                      <span className="text-white">%</span>
+                      {/* 命令 */}
+                      <span className="text-white flex-1">{output.command}</span>
+                    </div>
+
+                    {/* 正常输出 */}
+                    {output.output && (
+                      <div className="pl-4">
+                        <pre className="text-gray-300 whitespace-pre-wrap overflow-x-auto leading-relaxed">
+                          {output.output}
+                        </pre>
+                      </div>
+                    )}
+
+                    {/* 错误输出 */}
+                    {output.error && (
+                      <div className="pl-4">
+                        <pre className="text-red-400 whitespace-pre-wrap overflow-x-auto leading-relaxed">
+                          {output.error}
+                        </pre>
+                      </div>
+                    )}
+
+                    {/* 命令执行时间 */}
+                    <div className="pl-4 text-xs text-gray-600 mt-1">
+                      {new Date(output.timestamp).toLocaleString()}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+            {/* 滚动锚点 - 用于自动滚动到底部 */}
+            <div ref={terminalEndRef} />
+          </div>
+        ) : null}
+      </div>
+
+      {/* 放大截图模态框 */}
+      {enlargedSnapshot && (
+        <div
+          className="fixed inset-0 z-[60] bg-black bg-opacity-75 flex items-center justify-center p-4"
+          onClick={() => setEnlargedSnapshot(null)}
+        >
+          <div className="relative max-w-full max-h-full overflow-auto">
+            {/* 关闭按钮 */}
+            <button
+              onClick={() => setEnlargedSnapshot(null)}
+              className="absolute top-4 right-4 z-10 bg-white dark:bg-gray-800 rounded-full p-2 shadow-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+            >
+              <svg className="w-6 h-6 text-gray-600 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            {/* 图片信息 */}
+            <div className="absolute top-4 left-4 z-10 bg-white dark:bg-gray-800 rounded-lg px-4 py-2 shadow-lg">
+              <p className="text-sm font-medium text-gray-900 dark:text-white mb-1">
+                {enlargedSnapshot.title || t('canvas.browserScreenshot')}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {new Date(enlargedSnapshot.timestamp).toLocaleString()}
+              </p>
+            </div>
+            {/* 大图 */}
+            <img
+              src={enlargedSnapshot.screenshot.startsWith('data:') ? enlargedSnapshot.screenshot : `data:image/png;base64,${enlargedSnapshot.screenshot}`}
+              alt={enlargedSnapshot.title || enlargedSnapshot.url}
+              className="max-w-full max-h-[calc(100vh-8rem)] object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+            {/* URL */}
+            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 px-4 py-2">
+              <p className="text-xs text-white truncate">{enlargedSnapshot.url}</p>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

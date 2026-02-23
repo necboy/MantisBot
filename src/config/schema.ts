@@ -1,0 +1,430 @@
+// src/config/schema.ts
+
+import { z } from 'zod';
+
+export const ServerConfigSchema = z.object({
+  host: z.string().default('0.0.0.0'),
+  port: z.number().default(3000),
+  cors: z.boolean().default(true),
+  wsPath: z.string().default('/ws'),
+  bind: z.string().optional(),
+  tailscale: z.object({
+    enabled: z.boolean().default(false),
+    mode: z.string().optional(),
+    resetOnExit: z.boolean().default(true),
+  }).optional(),
+  // 内网穿透配置
+  tunnel: z.object({
+    enabled: z.boolean().default(false),
+    // DDNSTO 配置
+    ddnsto: z.object({
+      enabled: z.boolean().default(false),
+      token: z.string().optional(),
+      deviceIdx: z.number().default(0),
+      deviceName: z.string().optional(),
+    }).optional(),
+    // Cloudflare Tunnel 配置
+    cloudflare: z.object({
+      enabled: z.boolean().default(false),
+      token: z.string().optional(),
+      tunnelId: z.string().optional(),
+      credentialsFile: z.string().optional(),
+    }).optional(),
+    // FRP 配置
+    frp: z.object({
+      enabled: z.boolean().default(false),
+      configPath: z.string().optional(),
+      serverAddr: z.string().optional(),
+      serverPort: z.number().optional(),
+      token: z.string().optional(),
+      localPort: z.number().optional(),
+      subdomain: z.string().optional(),
+    }).optional(),
+  }).optional(),
+});
+
+// 模型协议类型：决定使用哪个 SDK
+export const ModelProtocolSchema = z.enum(['openai', 'anthropic']);
+
+// 模型提供商：决定默认 API 端点
+export const ModelProviderSchema = z.enum([
+  'openai',      // OpenAI 官方
+  'anthropic',   // Anthropic 官方 (Claude)
+  'deepseek',    // DeepSeek
+  'alibaba',     // 阿里百炼 (通义千问)
+  'moonshot',    // Moonshot AI (Kimi)
+  'zhipu',       // 智谱 AI (GLM)
+  'minimax',     // MiniMax
+  'xai',         // xAI (Grok)
+  'google',      // Google AI (Gemini)
+  'cohere',      // Cohere
+  'ollama',      // Ollama 本地
+  'custom',      // 自定义端点
+]);
+
+// 提供商默认配置：支持 OpenAI 和 Anthropic 两种协议的端点
+export const PROVIDER_DEFAULTS: Record<string, {
+  openai: string;
+  anthropic: string;
+  defaultProtocol: 'openai' | 'anthropic';
+}> = {
+  openai: {
+    openai: 'https://api.openai.com/v1',
+    anthropic: '', // OpenAI 不提供 Anthropic 协议
+    defaultProtocol: 'openai',
+  },
+  anthropic: {
+    openai: '', // Anthropic 不提供 OpenAI 协议
+    anthropic: 'https://api.anthropic.com',
+    defaultProtocol: 'anthropic',
+  },
+  deepseek: {
+    openai: 'https://api.deepseek.com/v1',
+    anthropic: '', // DeepSeek 不提供 Anthropic 协议
+    defaultProtocol: 'openai',
+  },
+  alibaba: {
+    openai: 'https://dashscope.aliyuncs.com/compatible-mode/v1',
+    anthropic: '', // 阿里百炼不提供 Anthropic 协议
+    defaultProtocol: 'openai',
+  },
+  moonshot: {
+    openai: 'https://api.moonshot.cn/v1',
+    anthropic: '', // Kimi 不提供 Anthropic 协议
+    defaultProtocol: 'openai',
+  },
+  zhipu: {
+    openai: 'https://open.bigmodel.cn/api/paas/v4',
+    anthropic: 'https://open.bigmodel.cn/api/coding/paas/v4',
+    defaultProtocol: 'openai',
+  },
+  minimax: {
+    openai: 'https://api.minimax.chat/v1',
+    anthropic: 'https://api.minimaxi.com/anthropic',
+    defaultProtocol: 'openai',
+  },
+  xai: {
+    openai: 'https://api.x.ai/v1',
+    anthropic: '', // xAI 不提供 Anthropic 协议
+    defaultProtocol: 'openai',
+  },
+  google: {
+    openai: 'https://generativelanguage.googleapis.com/v1beta',
+    anthropic: '', // Google 不提供 Anthropic 协议
+    defaultProtocol: 'openai',
+  },
+  cohere: {
+    openai: 'https://api.cohere.ai/v1',
+    anthropic: '', // Cohere 不提供 Anthropic 协议
+    defaultProtocol: 'openai',
+  },
+  ollama: {
+    openai: 'http://localhost:11434/v1',
+    anthropic: '', // Ollama 不提供 Anthropic ��议
+    defaultProtocol: 'openai',
+  },
+  custom: {
+    openai: '',
+    anthropic: '',
+    defaultProtocol: 'openai',
+  },
+};
+
+export const ModelConfigSchema = z.object({
+  name: z.string(),
+  // 协议类型（决定使用哪个 SDK）
+  protocol: ModelProtocolSchema.optional(),
+  // 提供商（决定默认端点）
+  provider: ModelProviderSchema.optional(),
+  model: z.string(),
+  apiKey: z.string().optional(),
+  baseUrl: z.string().optional(),
+  baseURL: z.string().optional(),
+  endpoint: z.string().optional(),
+});
+
+export const FeishuConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  appId: z.string().optional(),
+  appSecret: z.string().optional(),
+  verificationToken: z.string().optional(),
+  encryptKey: z.string().optional(),
+});
+
+export const SlackConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  botToken: z.string().optional(),
+  signingSecret: z.string().optional(),
+  appToken: z.string().optional(),
+});
+
+export const PluginConfigSchema = z.object({
+  name: z.string(),
+  enabled: z.boolean().default(true),
+  config: z.record(z.string(), z.unknown()).optional(),
+});
+
+// 支持字符串数组或对象数组格式
+const PluginSchema = z.union([
+  z.string().transform(name => ({ name, enabled: true })),
+  PluginConfigSchema,
+]);
+
+// 存储配置 Schema
+export const StorageProviderSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  type: z.enum(['local', 'nas']),
+  enabled: z.boolean().default(true),
+
+  // 本地存储配置
+  path: z.string().optional(),
+
+  // NAS 存储配置
+  protocol: z.enum(['webdav', 'smb']).optional(),
+  url: z.string().url().optional(),
+  username: z.string().optional(),
+  password: z.string().optional(),
+  basePath: z.string().optional(),
+  timeout: z.number().positive().optional().default(30000)
+}).refine(
+  (data) => {
+    if (data.type === 'local') {
+      return !!data.path;
+    }
+    if (data.type === 'nas') {
+      return !!(data.url && data.username && data.password);
+    }
+    return false;
+  },
+  { message: 'Invalid storage configuration' }
+);
+
+export const StorageSchema = z.object({
+  default: z.string(),
+  providers: z.array(StorageProviderSchema)
+});
+
+// ============================================
+// 邮件配置 Schema
+// ============================================
+
+// 邮件提供商预设
+export const EMAIL_PROVIDERS: Record<string, {
+  name: string;
+  imap: { host: string; port: number; tls: boolean };
+  smtp: { host: string; port: number; secure: boolean };
+  hint?: string;
+}> = {
+  gmail: {
+    name: 'Gmail',
+    imap: { host: 'imap.gmail.com', port: 993, tls: true },
+    smtp: { host: 'smtp.gmail.com', port: 465, secure: true },
+    hint: '需要在 Google 账户中启用"两步验证"并生成"应用专用密码"',
+  },
+  outlook: {
+    name: 'Outlook',
+    imap: { host: 'outlook.office365.com', port: 993, tls: true },
+    smtp: { host: 'smtp.office365.com', port: 587, secure: false },
+  },
+  '163': {
+    name: '163.com',
+    imap: { host: 'imap.163.com', port: 993, tls: true },
+    smtp: { host: 'smtp.163.com', port: 465, secure: true },
+    hint: '需要在网页端开启 IMAP/SMTP 服务，使用授权码而非登录密码',
+  },
+  '126': {
+    name: '126.com',
+    imap: { host: 'imap.126.com', port: 993, tls: true },
+    smtp: { host: 'smtp.126.com', port: 465, secure: true },
+    hint: '需要在网页端开启 IMAP/SMTP 服务，使用授权码而非登录密码',
+  },
+  qq: {
+    name: 'QQ Mail',
+    imap: { host: 'imap.qq.com', port: 993, tls: true },
+    smtp: { host: 'smtp.qq.com', port: 465, secure: true },
+    hint: '需要在网页端开启 IMAP/SMTP 服务，使用授权码而非登录密码',
+  },
+  feishu: {
+    name: 'Feishu Mail',
+    imap: { host: 'imap.feishu.cn', port: 993, tls: true },
+    smtp: { host: 'smtp.feishu.cn', port: 465, secure: true },
+  },
+  yahoo: {
+    name: 'Yahoo Mail',
+    imap: { host: 'imap.mail.yahoo.com', port: 993, tls: true },
+    smtp: { host: 'smtp.mail.yahoo.com', port: 465, secure: true },
+    hint: '需要生成"应用专用密码"',
+  },
+  icloud: {
+    name: 'iCloud',
+    imap: { host: 'imap.mail.me.com', port: 993, tls: true },
+    smtp: { host: 'smtp.mail.me.com', port: 587, secure: false },
+    hint: '需要使用"应用专用密码"',
+  },
+  custom: {
+    name: '自定义',
+    imap: { host: '', port: 993, tls: true },
+    smtp: { host: '', port: 465, secure: true },
+  },
+};
+
+// 单个邮箱账户配置
+export const EmailAccountSchema = z.object({
+  id: z.string(),                    // 唯一标识
+  name: z.string(),                  // 显示名称
+  email: z.string(),                 // 邮箱地址
+  password: z.string(),              // 密码/授权码
+  provider: z.string().default('custom'),  // 提供商 ID
+
+  // IMAP 配置
+  imap: z.object({
+    host: z.string(),
+    port: z.number().default(993),
+    tls: z.boolean().default(true),
+  }),
+
+  // SMTP 配置
+  smtp: z.object({
+    host: z.string(),
+    port: z.number().default(465),
+    secure: z.boolean().default(true),
+  }),
+
+  // 状态
+  enabled: z.boolean().default(true),
+  isDefault: z.boolean().default(false),
+
+  // 最后同步时间
+  lastSyncAt: z.number().optional(),
+});
+
+// 邮件配置 Schema
+export const EmailConfigSchema = z.object({
+  enabled: z.boolean().default(false),
+  accounts: z.array(EmailAccountSchema).default([]),
+  defaultAccountId: z.string().optional(),
+});
+
+export type EmailAccount = z.infer<typeof EmailAccountSchema>;
+export type EmailConfig = z.infer<typeof EmailConfigSchema>;
+
+export const ConfigSchema = z.object({
+  server: ServerConfigSchema,
+  models: z.array(ModelConfigSchema).min(1),
+  defaultModel: z.string().optional(),
+  feishu: FeishuConfigSchema.optional(),
+  slack: SlackConfigSchema.optional(),
+  agent: z.object({
+    // 禁用 PreferenceDetector（用户偏好检测）
+    disablePreferenceDetector: z.boolean().default(false),
+    // 禁用 EvolutionProposer（演变提议生成）
+    disableEvolutionProposer: z.boolean().default(false),
+  }).optional(),
+  channels: z.object({
+    httpWs: z.object({
+      enabled: z.boolean().default(true),
+    }).optional(),
+    feishu: z.object({
+      enabled: z.boolean().default(false),
+      appId: z.string().optional(),
+      appSecret: z.string().optional(),
+      verificationToken: z.string().optional(),
+      encryptKey: z.string().optional(),
+    }).optional(),
+    slack: z.object({
+      enabled: z.boolean().default(false),
+      botToken: z.string().optional(),
+      signingSecret: z.string().optional(),
+      appToken: z.string().optional(),
+    }).optional(),
+    dingtalk: z.object({
+      enabled: z.boolean().default(false),
+      agentId: z.string().optional(),
+      appKey: z.string().optional(),
+      appSecret: z.string().optional(),
+      corpId: z.string().optional(),
+    }).optional(),
+    wecom: z.object({
+      enabled: z.boolean().default(false),
+      corpId: z.string().optional(),
+      secret: z.string().optional(),
+      agentId: z.string().optional(),
+    }).optional(),
+    whatsapp: z.object({
+      enabled: z.boolean().default(false),
+      phoneNumberId: z.string().optional(),
+      accessToken: z.string().optional(),
+      webhookVerifyToken: z.string().optional(),
+    }).optional(),
+    wechat: z.object({
+      enabled: z.boolean().default(false),
+      token: z.string().optional(),
+    }).optional(),
+  }).optional(),
+  plugins: z.array(PluginSchema).default([]).transform(
+    plugins => plugins.map(p => typeof p === 'string' ? { name: p, enabled: true } : p
+  )),
+  memory: z.object({
+    enabled: z.boolean().default(true),
+    vectorDimension: z.number().default(1536),
+  }).optional(),
+  // 会话和上下文窗口配置
+  session: z.object({
+    // 传入 LLM 的最大 token 预算（字符估算：英文约 4 字符/token，中文约 2 字符/token）
+    // 默认 80000 字符 ≈ 约 30K tokens，为大多数模型留出足够空间
+    maxInputChars: z.number().default(80000),
+    // 单个会话最多保留的消息条数（超出时裁掉最旧的消息）
+    maxMessages: z.number().default(100),
+    // 会话不活跃多少天后自动归档（设为 0 禁用）
+    ttlDays: z.number().default(30),
+  }).optional(),
+  workspace: z.string().optional(),
+  // 允许 Agent 访问的宿主机目录列表（需要手动在 docker-compose.yml 中挂载）
+  allowedPaths: z.array(z.string()).optional().default([]),
+  // Office 文件预览服务器配置
+  officePreviewServer: z.string().optional(),
+  // 默认禁用所有 skills，只有在这里列出的才会启用
+  enabledSkills: z.array(z.string()).optional().default([]),
+  // 已废弃：使用 enabledSkills 代替
+  disabledSkills: z.array(z.string()).optional().default([]),
+  // Agent 性格配置
+  activeProfile: z.string().optional().default('default'),
+  // 存储配置
+  storage: StorageSchema.optional(),
+  // 邮件配置
+  email: EmailConfigSchema.optional(),
+  // 可靠性和错误处理配置
+  reliability: z.object({
+    enabled: z.boolean().default(true),
+    circuitBreaker: z.object({
+      enabled: z.boolean().default(true),
+      failureThreshold: z.number().default(5),
+      resetTimeoutMs: z.number().default(60000),
+      monitoringWindowMs: z.number().default(120000),
+    }).optional(),
+    retry: z.object({
+      enabled: z.boolean().default(true),
+      maxAttempts: z.number().default(3),
+      baseDelayMs: z.number().default(1000),
+      maxDelayMs: z.number().default(30000),
+      backoffStrategy: z.enum(['linear', 'exponential', 'fixed']).default('exponential'),
+    }).optional(),
+    errorReporting: z.object({
+      enabled: z.boolean().default(true),
+      logErrors: z.boolean().default(true),
+      trackMetrics: z.boolean().default(true),
+    }).optional(),
+  }).optional(),
+});
+
+export type Config = z.infer<typeof ConfigSchema>;
+export type ServerConfig = z.infer<typeof ServerConfigSchema>;
+export type ModelConfig = z.infer<typeof ModelConfigSchema>;
+export type ModelProtocol = z.infer<typeof ModelProtocolSchema>;
+export type ModelProvider = z.infer<typeof ModelProviderSchema>;
+export type FeishuConfig = z.infer<typeof FeishuConfigSchema>;
+export type SlackConfig = z.infer<typeof SlackConfigSchema>;
+export type StorageProviderConfig = z.infer<typeof StorageProviderSchema>;
+export type StorageConfig = z.infer<typeof StorageSchema>;
+export type ReliabilityConfig = z.infer<typeof ConfigSchema>['reliability'];

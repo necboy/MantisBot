@@ -1,0 +1,169 @@
+{
+  "app": {
+    "title": "MantisBot",
+    "newChat": "新建对话",
+    "scheduledTasks": "定时任务",
+    "settings": "设置",
+    "startNewChat": "开始一个新对话吧",
+    "thinking": "思考中...",
+    "loadingSession": "加载会话中...",
+    "send": "发送",
+    "stop": "停止",
+    "inputPlaceholder": "输入消息...",
+    "computer": "电脑",
+    "closePanel": "关闭电脑面板",
+    "openPanel": "打开电脑面板",
+    "intranetTunnel": "内网穿透",
+    "intranetConfig": "内网穿透配置",
+    "workDir": "工作目录",
+    "enterWorkDir": "请输入新的工作目录路径",
+    "clickToChange": "点击切换工作目录"
+  },
+  "backend": {
+    "checking": "正在连接后端服务...",
+    "reconnecting": "后端服务可能正在重启，5 秒后自动重试..."
+  },
+  "notification": {
+    "cronNotification": "定时任务通知"
+  },
+  "file": {
+    "openInCanvas": "在画布中打开",
+    "download": "下载文件",
+    "referencedFiles": "引用的文件/目录"
+  },
+  "tool": {
+    "read": "读取文件",
+    "write": "写入文件",
+    "edit": "编辑文件",
+    "exec": "执行命令",
+    "readSkill": "读取技能",
+    "sendFile": "发送文件",
+    "memorySearch": "搜索记忆",
+    "document": "处理文档",
+    "logger": "记录日志",
+    "browserNavigate": "浏览网页",
+    "browserScreenshot": "截图",
+    "browserClick": "点击元素",
+    "browserType": "输入文本",
+    "browserScroll": "滚动页面",
+    "browserWait": "等待元素",
+    "cronManage": "管理定时任务"
+  },
+  "toolArgs": {
+    "reading": "正在读取 {{filename}}",
+    "writing": "正在写入 {{filename}}",
+    "editing": "正在编辑 {{filename}}",
+    "executing": "执行: {{command}}",
+    "visiting": "访问: {{url}}",
+    "searching": "搜索: {{query}}"
+  },
+  "settings": {
+    "title": "设置",
+    "skillManagement": "Skill 管理",
+    "modelConfig": "模型配置",
+    "agentProfile": "Agent 人格",
+    "evolution": "演变记录",
+    "allowedPaths": "目录权限",
+    "channelManagement": "通信渠道"
+  },
+  "channelManagement": {
+    "channels": "渠道管理",
+    "addChannel": "添加渠道",
+    "editChannel": "编辑渠道",
+    "deleteChannel": "删除渠道",
+    "deleteChannelConfirm": "确定要删除这个渠道吗？",
+    "testConnection": "测试连接",
+    "testing": "测试中...",
+    "connectionSuccess": "连接成功",
+    "connectionFailed": "连接失败",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "channelStatus": {
+      "disconnected": "未连接",
+      "connecting": "连接中",
+      "connected": "已连接",
+      "error": "连接错误"
+    },
+    "channelForm": {
+      "selectChannel": "选择渠道类型",
+      "enabled": "启用",
+      "config": "配置",
+      "required": "必填"
+    }
+  },
+  "channel": {
+    "httpWs": "网页客户端",
+    "feishu": "飞书",
+    "slack": "Slack",
+    "dingtalk": "钉钉",
+    "wecom": "企业微信",
+    "whatsapp": "WhatsApp"
+  },
+  "language": {
+    "chinese": "中文",
+    "english": "English",
+    "selectLanguage": "选择语言"
+  },
+  "confirm": {
+    "deleteSession": "确定要删除这个对话吗？"
+  },
+  "error": {
+    "sendFailed": "发送消息失败，请重试",
+    "networkError": "网络连接失败，请检查网络设置",
+    "timeout": "请求超时，请稍后重试",
+    "setWorkDirFailed": "设置工作目录失败",
+    "addPermissionFailed": "添加目录权限失败",
+    "getPermissionFailed": "获取目录权限失败"
+  },
+  "success": {
+    "permissionAdded": "目录权限添加成功，工作目录已切换"
+  },
+  "permission": {
+    "title": "工具权限请求",
+    "tool": "工具",
+    "reason": "原因",
+    "parameters": "参数",
+    "deny": "拒绝",
+    "allow": "允许",
+    "processing": "处理中...",
+    "dangerHigh": "此操作可能导致数据丢失",
+    "dangerMedium": "此操作将执行命令",
+    "dangerLow": "确认此操作",
+    "askQuestion": "请回答以下问题"
+  },
+  "canvas": {
+    "title": "我的电脑",
+    "preview": "画布",
+    "browser": "浏览器",
+    "terminal": "终端",
+    "nas": "NAS",
+    "screenshot": "截图",
+    "livePreview": "实时预览",
+    "noScreenshots": "暂无浏览器截图",
+    "screenshotHint": "当 Agent 操作浏览器时，截图会自动显示在这里",
+    "latest": "最新",
+    "clickToEnlarge": "点击放大",
+    "clickToOpen": "点击在实时预览中打开",
+    "noUrlAvailable": "暂无可用 URL",
+    "iframeBlocked": "⚠️ 无法嵌入此网站（网站禁止 iframe），已回退到最新截图",
+    "noOutput": "暂无命令输出",
+    "outputHint": "当 Agent 执行命令时，输出会自动显示在这里",
+    "browserScreenshot": "浏览器截图"
+  },
+  "skills": {
+    "expandAll": "展开全部",
+    "collapseAll": "收起全部",
+    "total": "总计",
+    "skillsCount": "个 skills",
+    "enabled": "已启用",
+    "disabled": "已禁用",
+    "searchPlaceholder": "搜索 skills..."
+  },
+  "approval": {
+    "title": "审批模式",
+    "auto": "自动批准任何操作",
+    "dangerous": "危险操作需确认",
+    "ask": "任何操作都询问"
+  }
+}
