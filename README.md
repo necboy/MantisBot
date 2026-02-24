@@ -1,4 +1,4 @@
-# MantisBot 
+# MantisBot
 
 <img src="assets/logo.png" alt="MantisBot Logo" width="200">
 
@@ -8,6 +8,12 @@
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/necboy/MantisBot/main/assets/logo.svg">
   <img src="https://raw.githubusercontent.com/necboy/MantisBot/main/assets/logo.svg" alt="MantisBot Logo" width="200">
 </picture>
+
+**An AI Agent platform for personal and work use, optimized and built based on the OpenClaw framework and concepts**
+
+Supports multiple communication channels and LLM models, with 40+ built-in practical skills (including PDF + Office suite integration), OnlyOffice integration for online Office file editing, and the ability to use your personal computer as a remote storage NAS to build personal and work AI knowledge bases
+
+---
 
 **一个基于OpenClaw框架和思路优化并构建的个人+工作 AI Agent 平台**
 
@@ -20,6 +26,238 @@
 [English](#english) | [中文文档](#中文文档)
 
 </div>
+
+---
+
+## English
+
+### 🎯 Introduction
+
+MantisBot is a **modular AI Agent platform** for individual users, developers, and enterprises. Unlike OpenClaw and other consumer-focused products, MantisBot focuses on:
+
+- **Enterprise Architecture** - Highly modular design, easy to extend and customize
+- **Convenient Configuration** - Highly configurable frontend interface
+- **Unified Multi-Model Management** - Supports OpenAI, Claude, Qwen, MiniMax, GLM, and more, better suited for China's domestic ecosystem
+- **Skill Ecosystem** - 40+ built-in skills, ready to use
+- **Smart Memory System** - Hybrid retrieval (vector + full-text), better understanding
+
+### ✨ Features
+
+- **🔌 Channel-First Architecture** - Unified IChannel interface supporting Web UI, Feishu, DingTalk, Slack, and more (Overseas IM tools not yet tested, use with caution)
+- **🤖 Multi-Model Support** - OpenAI, Claude, Qwen, MiniMax, GLM, etc.
+- **🛠️ 40+ Built-in Skills** - Document processing, office automation, deep research, etc.
+- **🧠 Smart Memory System** - Hybrid search with vector + full-text retrieval
+- **⏰ Scheduled Tasks** - Cron, interval, and one-time scheduling
+- **📦 Plugin System** - Dynamic plugin loading with MCP protocol support
+- **🛡️ Reliability** - Circuit breaker, retry management, global error handling
+- **🌐 Tunnel Services and Domain Forwarding** - DDNS.to, Cloudflare Tunnel, FRP support
+
+### 📸 System Preview
+
+**System Interface**
+![System Interface](assets/screenshot1.png)
+
+**Skill Packages**
+![Skill Marketplace](assets/screenshot2.png)
+
+**Feishu & IM Integration**
+![Feishu & IM Integration](assets/screenshot3.png)
+
+### 💡 Typical Use Cases
+
+MantisBot's 40+ skills cover various aspects of work and life:
+
+#### 📄 Document Processing & Office Automation
+
+| Scenario | Skill |
+|----------|-------|
+| Read/analyze PDF, extract text/tables | `pdf` - Read, OCR, extract, merge |
+| Create research report PPT, market analysis | `pptx` + `deep-research` - Deep research + PPT |
+| Create product demos, company profiles | `pptx` + `docx` - Doc organization + PPT |
+| Create data analysis reports, charts | `xlsx` + `pptx` - Excel analysis + PPT charts |
+| Handle Word documents, contracts | `docx` - Word document operations |
+| Excel data processing, statistics | `xlsx` - Excel operations & data processing |
+| Write internal communications, weekly/monthly reports | `internal-comms` - Internal communications |
+| Batch process multiple PDFs | `pdf` - Batch merge, split, extract |
+| Convert PDF to editable documents | `pdf` + `docx` - OCR + Word conversion |
+| **Online Edit Word/Excel/PPT** | **OnlyOffice Integration** - Edit Office files directly in browser, multi-user collaboration |
+
+#### 🧠 Research & Analysis
+
+| Scenario | Skill |
+|----------|-------|
+| Deep industry research with 10+ sources | `deep-research` - Enterprise-grade research |
+| Brainstorming & ideation | `brainstorming` - Creative brainstorming |
+| Brand guidelines creation | `brand-guidelines` - Brand guide creation |
+
+#### 💻 Development & Tech Work
+
+| Scenario | Skill |
+|----------|-------|
+| Frontend development | `frontend-design` - High-quality UI development |
+| Web app testing | `webapp-testing` - Automated testing |
+| GitHub repository management | `github` - GitHub operations |
+| Build Claude Code automation | `coding-agent` - Coding Agent development |
+
+#### 🎨 Creative & Design
+
+| Scenario | Skill |
+|----------|-------|
+| Create beautiful web pages/components | `web-artifacts-builder` - Web Artifacts |
+| Generate algorithmic art | `algorithmic-art` - Algorithmic art |
+| Image/poster design | `canvas-design` - Canvas design |
+| Brand visual design | `theme-factory` - Theme factory |
+
+#### 📱 Apple Ecosystem Integration
+
+| Scenario | Skill |
+|----------|-------|
+| Manage Apple Notes | `apple-notes` - Notes management |
+| Sync Apple Reminders | `apple-reminders` - Reminders |
+| Manage Things Mac tasks | `things-mac` - Things task management |
+| Send iMessage | `imsg` - iMessage sending |
+
+#### 🔧 Tools & Productivity
+
+| Scenario | Skill |
+|----------|-------|
+| Speech-to-text (offline) | `openai-whisper` - Local Whisper |
+| Speech-to-text (API) | `openai-whisper-api` - API transcription |
+| AI image generation | `openai-image-gen` - DALL-E image generation |
+| GIF search | `gifgrep` - GIF search tool |
+| Weather query | `weather` - Weather information |
+
+#### 🔌 Extensions & Integration
+
+| Scenario | Skill |
+|----------|-------|
+| Build custom MCP servers | `mcp-builder` - MCP server development |
+| Install/publish skills | `skill-creator` / `clawhub` - Skill creation |
+| Send emails | `email` / `feishu-mail` - Email management |
+
+### 📊 Comparison with OpenClaw
+
+| Feature                | MantisBot                                        | OpenClaw                         |
+| ---------------------- | ------------------------------------------------ | -------------------------------- |
+| **Target Users** | Individual, Developers, Enterprise Users         | Individual Consumers             |
+| **Architecture** | Modular IChannel Interface                       | Gateway Control Plane            |
+| **Channels**     | Web UI, Feishu, DingTalk, Slack, etc.            | WhatsApp, Telegram, Discord 12+  |
+| **Models**       | Multi-model unified (OpenAI, Claude, Qwen, etc.) | Anthropic/OpenAI focused         |
+| **Skills**       | 40+ built-in + MCP                               | Bundled/Managed/Workspace Skills |
+| **Memory**       | Vector + Full-text Hybrid                        | Session-based                    |
+| **Security**     | Circuit breaker, retry, error handling           | DM pairing, security defaults    |
+
+#### MantisBot Key Advantages
+
+1. **Flexible Modular Design** - IChannel interface for easy channel integration
+2. **China Models First** - Native support for Qwen, MiniMax, GLM
+3. **Enterprise Reliability** - Circuit breaker, retry, global error handling
+4. **Ready-to-use Skills** - 40+ skills for docs, office automation, research
+5. **Hybrid Memory** - Vector + full-text search, better understanding
+
+### 🚀 Quick Start
+
+#### Prerequisites
+
+- Node.js >= 18.0.0
+- npm or pnpm
+
+#### Installation
+
+```bash
+# Clone the repository
+git clone https://github.com/necboy/MantisBot.git
+cd MantisBot
+
+# Install dependencies
+npm install
+
+# Install frontend dependencies
+cd web-ui && npm install && cd ..
+```
+
+#### Configuration
+
+```bash
+# Copy example config
+cp config/config.example.json config/config.json
+
+# Edit config.json with your API keys
+# Supports environment variables: "${YOUR_API_KEY_ENV}"
+```
+
+#### Start
+
+```bash
+# Using startup script (recommended)
+./start.sh
+
+# Or manually start
+# Backend
+npm run dev
+
+# Frontend
+cd web-ui && npm run dev
+```
+
+Visit http://localhost:3000 to access the Web UI.
+
+### 🏗️ Project Structure
+
+```
+MantisBot/
+├── src/                    # Main codebase
+│   ├── agents/            # Agent core logic
+│   ├── channels/          # Communication channels (HTTP-WS, Feishu, Slack)
+│   ├── memory/            # Memory system
+│   ├── plugins/           # Plugin system
+│   ├── reliability/       # Reliability components
+│   └── tools/             # Tool registry
+├── skills/                 # Skills directory (40+)
+├── web-ui/                # React frontend
+├── config/                # Configuration files
+└── docs/                  # Documentation
+```
+
+### 🛠️ Tech Stack
+
+**Backend:**
+
+- TypeScript + Node.js
+- Express + WebSocket
+- SQLite (sqlite-vec) + Better-SQLite3
+- Zod (configuration validation)
+
+**Frontend:**
+
+- React 18 + TypeScript
+- Vite + TailwindCSS
+- React Query + React Router
+- i18next (internationalization)
+
+### 📦 Docker Deployment
+
+```bash
+# Build and start
+docker-compose up -d
+
+# View logs
+docker-compose logs -f
+```
+
+### 🤝 Contributing
+
+Contributions are welcome! Please feel free to submit issues, fork the repository, and create pull requests.
+
+1. Fork this repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+### 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
@@ -185,7 +423,7 @@ cp config/config.example.json config/config.json
 #### 启动
 
 ```bash
-# 使用启动脚本（推荐）
+# 使用启动��本（推荐）
 ./start.sh
 
 # 或手动启动
@@ -254,189 +492,6 @@ docker-compose logs -f
 ### 📄 许可证
 
 本项目采用 MIT 许可证 - 详见 [LICENSE](LICENSE) 文件。
-
----
-
-## English
-
-### 🎯 Introduction
-
-MantisBot is a **modular AI Agent platform** for individual users, developers, and enterprises. Unlike OpenClaw and other consumer-focused products, MantisBot focuses on:
-
-- **Enterprise Architecture** - Highly modular design, easy to extend and customize
-- **Convenient Configuration** - Highly configurable frontend interface
-- **Unified Multi-Model Management** - Supports OpenAI, Claude, Qwen, MiniMax, GLM, and more, better suited for China's domestic ecosystem
-- **Skill Ecosystem** - 40+ built-in skills, ready to use
-- **Smart Memory System** - Hybrid retrieval (vector + full-text), better understanding
-
-### ✨ Features
-
-- **🔌 Channel-First Architecture** - Unified IChannel interface supporting Web UI, Feishu, DingTalk, Slack, and more (Overseas IM tools not yet tested, use with caution)
-- **🤖 Multi-Model Support** - OpenAI, Claude, Qwen, MiniMax, GLM, etc.
-- **🛠️ 40+ Built-in Skills** - Document processing, office automation, deep research, etc.
-- **🧠 Smart Memory System** - Hybrid search with vector + full-text retrieval
-- **⏰ Scheduled Tasks** - Cron, interval, and one-time scheduling
-- **📦 Plugin System** - Dynamic plugin loading with MCP protocol support
-- **🛡️ Reliability** - Circuit breaker, retry management, global error handling
-- **🌐 Tunnel Services and Domain Forwarding** - DDNS.to, Cloudflare Tunnel, FRP support
-
-### 📸 System Preview
-
-**System Interface**
-![System Interface](assets/screenshot1.png)
-
-**Skill Packages**
-![Skill Marketplace](assets/screenshot2.png)
-
-**Feishu & IM Integration**
-![Feishu & IM Integration](assets/screenshot3.png)
-
-### 💡 Typical Use Cases
-
-MantisBot's 40+ skills cover various aspects of work and life:
-
-#### 📄 Document Processing & Office Automation
-
-| Scenario | Skill |
-|----------|-------|
-| Read/analyze PDF, extract text/tables | `pdf` - Read, OCR, extract, merge |
-| Create research report PPT, market analysis | `pptx` + `deep-research` - Deep research + PPT |
-| Create product demos, company profiles | `pptx` + `docx` - Doc organization + PPT |
-| Create data analysis reports, charts | `xlsx` + `pptx` - Excel analysis + PPT charts |
-| Handle Word documents, contracts | `docx` - Word document operations |
-| Excel data processing, statistics | `xlsx` - Excel operations & data processing |
-| Write internal communications, weekly/monthly reports | `internal-comms` - Internal communications |
-| Batch process multiple PDFs | `pdf` - Batch merge, split, extract |
-| Convert PDF to editable documents | `pdf` + `docx` - OCR + Word conversion |
-| **Online Edit Word/Excel/PPT** | **OnlyOffice Integration** - Edit Office files directly in browser, multi-user collaboration |
-
-#### 🧠 Research & Analysis
-
-| Scenario | Skill |
-|----------|-------|
-| Deep industry research with 10+ sources | `deep-research` - Enterprise-grade research |
-| Brainstorming & ideation | `brainstorming` - Creative brainstorming |
-| Brand guidelines creation | `brand-guidelines` - Brand guide creation |
-
-#### 💻 Development & Tech Work
-
-| Scenario | Skill |
-|----------|-------|
-| Frontend development | `frontend-design` - High-quality UI development |
-| Web app testing | `webapp-testing` - Automated testing |
-| GitHub repository management | `github` - GitHub operations |
-| Build Claude Code automation | `coding-agent` - Coding Agent development |
-
-#### 🎨 Creative & Design
-
-| Scenario | Skill |
-|----------|-------|
-| Create beautiful web pages/components | `web-artifacts-builder` - Web Artifacts |
-| Generate algorithmic art | `algorithmic-art` - Algorithmic art |
-| Image/poster design | `canvas-design` - Canvas design |
-| Brand visual design | `theme-factory` - Theme factory |
-
-#### 📱 Apple Ecosystem Integration
-
-| Scenario | Skill |
-|----------|-------|
-| Manage Apple Notes | `apple-notes` - Notes management |
-| Sync Apple Reminders | `apple-reminders` - Reminders |
-| Manage Things Mac tasks | `things-mac` - Things task management |
-| Send iMessage | `imsg` - iMessage sending |
-
-#### 🔧 Tools & Productivity
-
-| Scenario | Skill |
-|----------|-------|
-| Speech-to-text (offline) | `openai-whisper` - Local Whisper |
-| Speech-to-text (API) | `openai-whisper-api` - API transcription |
-| AI image generation | `openai-image-gen` - DALL-E image generation |
-| GIF search | `gifgrep` - GIF search tool |
-| Weather查询 | `weather` - Weather information |
-
-#### 🔌 Extensions & Integration
-
-| Scenario | Skill |
-|----------|-------|
-| Build custom MCP servers | `mcp-builder` - MCP server development |
-| Install/publish skills | `skill-creator` / `clawhub` - Skill creation |
-| Send emails | `email` / `feishu-mail` - Email management |
-
-### 📊 Comparison with OpenClaw
-
-| Feature                | MantisBot                                        | OpenClaw                         |
-| ---------------------- | ------------------------------------------------ | -------------------------------- |
-| **Target Users** | Individual, Developers, Enterprise Users         | Individual Consumers             |
-| **Architecture** | Modular IChannel Interface                       | Gateway Control Plane            |
-| **Channels**     | Web UI, Feishu, DingTalk, Slack, etc.            | WhatsApp, Telegram, Discord 12+  |
-| **Models**       | Multi-model unified (OpenAI, Claude, Qwen, etc.) | Anthropic/OpenAI focused         |
-| **Skills**       | 40+ built-in + MCP                               | Bundled/Managed/Workspace Skills |
-| **Memory**       | Vector + Full-text Hybrid                        | Session-based                    |
-| **Security**     | Circuit breaker, retry, error handling           | DM pairing, security defaults    |
-
-#### MantisBot Key Advantages
-
-1. **Flexible Modular Design** - IChannel interface for easy channel integration
-2. **China Models First** - Native support for Qwen, MiniMax, GLM
-3. **Enterprise Reliability** - Circuit breaker, retry, global error handling
-4. **Ready-to-use Skills** - 40+ skills for docs, office automation, research
-5. **Hybrid Memory** - Vector + full-text search, better understanding
-
-### 🚀 Quick Start
-
-```bash
-# Clone the repository
-git clone https://github.com/necboy/MantisBot.git
-cd MantisBot
-
-# Install dependencies
-npm install
-cd web-ui && npm install && cd ..
-
-# Configure
-cp config/config.example.json config/config.json
-# Edit config.json with your API keys
-
-# Start
-./start.sh
-```
-
-Visit http://localhost:3000 to access the Web UI.
-
-### 📋 TODO List
-
-#### High Priority
-
-- [ ] Add more channel support (Telegram, Discord, WebSocket)
-- [ ] Enhance MCP protocol support for external tool integration
-- [ ] Optimize vector retrieval performance in memory system
-- [ ] Add more China model support (ERNIE, iFlytek Spark)
-
-#### Medium Priority
-
-- [ ] Develop mobile companion apps (iOS/Android)
-- [ ] Add voice interaction (input/output)
-- [ ] Implement Live Canvas visual workspace
-- [ ] Enhance security policies (DM pairing, input filtering)
-
-#### Low Priority
-
-- [ ] Develop macOS native menu bar app
-- [ ] Add desktop notification push
-- [ ] Implement multi-agent routing and isolation
-- [ ] Enhance automation workflows (webhook, wakeup)
-
-#### Long-term Planning
-
-- [ ] Build skill/plugin marketplace ecosystem
-- [ ] Support private deployment solutions
-- [ ] Explore multi-device collaboration
-- [ ] Integrate more enterprise services (DingTalk, WeCom)
-
-### 📄 License
-
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ---
 
