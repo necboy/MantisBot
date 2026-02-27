@@ -176,6 +176,26 @@ npm install
 cd web-ui && npm install && cd ..
 ```
 
+> **Dependency conflict notice**
+>
+> This project uses `zod@^4.x` (required by `@anthropic-ai/claude-agent-sdk`), while `openai@4.x/5.x` declares an optional peer dependency on `zod@^3.x`. npm v7+ treats this as an error by default.
+>
+> If you see an `ERESOLVE` error during `npm install`, use either option below:
+>
+> **Option A — `--legacy-peer-deps` (recommended)**
+> Ignores the optional peer conflict. Safe because the project does not use OpenAI's zod-based helpers (e.g. `zodResponseFormat`).
+> ```bash
+> npm install --legacy-peer-deps
+> cd web-ui && npm install && cd ..
+> ```
+>
+> **Option B — `--force`**
+> Forces resolution. Use only if Option A still fails.
+> ```bash
+> npm install --force
+> cd web-ui && npm install --force && cd ..
+> ```
+
 #### Configuration
 
 ```bash
@@ -409,6 +429,26 @@ npm install
 # 安装前端依赖
 cd web-ui && npm install && cd ..
 ```
+
+> **依赖冲突说明**
+>
+> 本项目使用 `zod@^4.x`（`@anthropic-ai/claude-agent-sdk` 的硬性依赖），而 `openai@4.x/5.x` 声明了对 `zod@^3.x` 的可选对等依赖（peerOptional）。npm v7+ 默认会将此冲突视为错误。
+>
+> 如果执行 `npm install` 时出现 `ERESOLVE` 错误，请选择以下任一方案：
+>
+> **方案 A — `--legacy-peer-deps`（推荐）**
+> 忽略可选对等依赖冲突。本项目未使用 OpenAI 的 zod 辅助功能（如 `zodResponseFormat`），因此完全安全。
+> ```bash
+> npm install --legacy-peer-deps
+> cd web-ui && npm install && cd ..
+> ```
+>
+> **方案 B — `--force`**
+> 强制解析。仅在方案 A 仍失败时使用。
+> ```bash
+> npm install --force
+> cd web-ui && npm install --force && cd ..
+> ```
 
 #### 配置
 
