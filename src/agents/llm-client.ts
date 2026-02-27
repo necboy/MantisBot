@@ -549,16 +549,51 @@ export class LLMClient {
     console.log(`[LLM] Using model: ${apiModel}`);
 
     // 构建消息 - 如果调用者已提供系统消息则使用，否则使用默认的
+    // 注意：需要保留 tool_calls 和 toolCallId 字段
     const hasSystemMessage = messages.length > 0 && messages[0].role === 'system';
     const chatMessages = hasSystemMessage
-      ? messages.map(m => ({ role: m.role, content: m.content }))
+      ? messages.map(m => {
+          const msg: any = { role: m.role, content: m.content };
+          if (m.role === 'assistant' && (m as any).tool_calls) {
+            // OpenAI API 要求 arguments 是 JSON 字符串
+            msg.tool_calls = (m as any).tool_calls.map((tc: any) => ({
+              id: tc.id,
+              type: 'function',
+              function: {
+                name: tc.name,
+                arguments: typeof tc.arguments === 'string' ? tc.arguments : JSON.stringify(tc.arguments)
+              }
+            }));
+          }
+          if (m.role === 'tool') {
+            msg.tool_call_id = (m as any).toolCallId;
+          }
+          return msg;
+        })
       : [
           { role: 'system' as const, content: await getSystemPrompt(tools) },
-          ...messages.map(m => ({ role: m.role, content: m.content }))
+          ...messages.map(m => {
+            const msg: any = { role: m.role, content: m.content };
+            if (m.role === 'assistant' && (m as any).tool_calls) {
+              // OpenAI API 要求 arguments 是 JSON 字符串
+              msg.tool_calls = (m as any).tool_calls.map((tc: any) => ({
+                id: tc.id,
+                type: 'function',
+                function: {
+                  name: tc.name,
+                  arguments: typeof tc.arguments === 'string' ? tc.arguments : JSON.stringify(tc.arguments)
+                }
+              }));
+            }
+            if (m.role === 'tool') {
+              msg.tool_call_id = (m as any).toolCallId;
+            }
+            return msg;
+          })
         ];
 
     // 构建工具
-    let chatTools: unknown = undefined;
+    let chatTools: any = undefined;
     if (tools && tools.length > 0) {
       chatTools = tools.map(t => ({
         type: 'function',
@@ -645,16 +680,49 @@ export class LLMClient {
     }
 
     // 构建消息 - 如果调用者已提供系统消息则使用，否则使用默认的
+    // 注意：需要保留 tool_calls 和 toolCallId 字段
     const hasSystemMessage = messages.length > 0 && messages[0].role === 'system';
     const chatMessages = hasSystemMessage
-      ? messages.map(m => ({ role: m.role, content: m.content }))
+      ? messages.map(m => {
+          const msg: any = { role: m.role, content: m.content };
+          if (m.role === 'assistant' && (m as any).tool_calls) {
+            msg.tool_calls = (m as any).tool_calls.map((tc: any) => ({
+              id: tc.id,
+              type: 'function',
+              function: {
+                name: tc.name,
+                arguments: typeof tc.arguments === 'string' ? tc.arguments : JSON.stringify(tc.arguments)
+              }
+            }));
+          }
+          if (m.role === 'tool') {
+            msg.tool_call_id = (m as any).toolCallId;
+          }
+          return msg;
+        })
       : [
           { role: 'system' as const, content: await getSystemPrompt(tools) },
-          ...messages.map(m => ({ role: m.role, content: m.content }))
+          ...messages.map(m => {
+            const msg: any = { role: m.role, content: m.content };
+            if (m.role === 'assistant' && (m as any).tool_calls) {
+              msg.tool_calls = (m as any).tool_calls.map((tc: any) => ({
+                id: tc.id,
+                type: 'function',
+                function: {
+                  name: tc.name,
+                  arguments: typeof tc.arguments === 'string' ? tc.arguments : JSON.stringify(tc.arguments)
+                }
+              }));
+            }
+            if (m.role === 'tool') {
+              msg.tool_call_id = (m as any).toolCallId;
+            }
+            return msg;
+          })
         ];
 
     // 构建工具
-    let chatTools: unknown = undefined;
+    let chatTools: any = undefined;
     if (tools && tools.length > 0) {
       chatTools = tools.map(t => ({
         type: 'function',
@@ -865,6 +933,13 @@ export class LLMClient {
       return `对话 ${new Date().toLocaleString('zh-CN')}`;
     }
   }
+
+  // 清理客户端缓存，用于配置更新后热加载
+  clearCache(): void {
+    this.openAIClients.clear();
+    this.anthropicClients.clear();
+    console.log('[LLM] Client cache cleared for hot reload');
+  }
 }
 
 // 单例
@@ -875,4 +950,11 @@ export function getLLMClient(): LLMClient {
     llmClient = new LLMClient();
   }
   return llmClient;
+}
+
+// 清理 LLM 客户端缓存，用于配置更新后热加载
+export function clearLLMClientCache(): void {
+  if (llmClient) {
+    llmClient.clearCache();
+  }
 }

@@ -364,6 +364,38 @@ export class OpenAICompatRunner extends EventEmitter {
   }
 
   /**
+   * 过滤无效的 tool 消息
+   * OpenAI 兼容 API 要求 tool 消息必须紧跟在包含 tool_calls 的 assistant 消息后面
+   */
+  private filterInvalidToolMessages(messages: LLMMessage[]): LLMMessage[] {
+    const filtered: LLMMessage[] = [];
+    let lastAssistantHadToolCalls = false;
+
+    for (let i = 0; i < messages.length; i++) {
+      const msg = messages[i];
+
+      if (msg.role === 'assistant') {
+        const hasToolCalls = !!(msg as any).tool_calls && (msg as any).tool_calls.length > 0;
+        lastAssistantHadToolCalls = hasToolCalls;
+        filtered.push(msg);
+      } else if (msg.role === 'tool') {
+        // 只有当前一个 assistant 消息有 tool_calls 时才保留 tool 消息
+        if (lastAssistantHadToolCalls) {
+          filtered.push(msg);
+          lastAssistantHadToolCalls = false;
+        } else {
+          console.warn('[OpenAICompatRunner] Filtering out invalid tool message (no preceding tool_calls)');
+        }
+      } else {
+        filtered.push(msg);
+        lastAssistantHadToolCalls = false;
+      }
+    }
+
+    return filtered;
+  }
+
+  /**
    * 构建消息列表
    */
   private buildMessages(userMessage: string, history: LLMMessage[]): LLMMessage[] {
@@ -377,8 +409,9 @@ export class OpenAICompatRunner extends EventEmitter {
       });
     }
 
-    // 添加历史记录
-    messages.push(...history);
+    // 添加历史记录（过滤无效的 tool 消息）
+    const filteredHistory = this.filterInvalidToolMessages(history);
+    messages.push(...filteredHistory);
 
     // 添加用户消息
     messages.push({

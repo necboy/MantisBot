@@ -11,7 +11,7 @@ import { EMAIL_PROVIDERS } from '../../config/schema.js';
 import type { Message } from '../../types.js';
 // AgentRunner 已移除，统一使用 ClaudeAgentRunner
 import { getFileStorage } from '../../files/index.js';
-import { getLLMClient } from '../../agents/llm-client.js';
+import { getLLMClient, clearLLMClientCache } from '../../agents/llm-client.js';
 import exploreRouter from './explore-api.js';
 import storageRouter from './storage-api.js';
 import { createCronRoutes } from './cron-routes.js';
@@ -561,6 +561,7 @@ export async function createHTTPServer(options: HTTPServerOptions) {
           provider: m.provider || m.protocol || 'openai',
           model: m.model
         })),
+        defaultModel: config.defaultModel || (config.models.length > 0 ? config.models[0].name : null),
         officePreviewServer: config.officePreviewServer  // 添加 Office 预览服务器配置
       });
     } catch (error) {
@@ -772,6 +773,7 @@ export async function createHTTPServer(options: HTTPServerOptions) {
 
       config.models.push(newModel);
       await saveConfig(config);
+      clearLLMClientCache(); // 清理客户端缓存，实现热加载
 
       res.json({ success: true, model: newModel });
     } catch (error) {
@@ -793,6 +795,7 @@ export async function createHTTPServer(options: HTTPServerOptions) {
 
       config.defaultModel = name;
       await saveConfig(config);
+      clearLLMClientCache(); // 清理客户端缓存，实现热加载
 
       res.json({ success: true, defaultModel: name });
     } catch (error) {
@@ -854,6 +857,7 @@ export async function createHTTPServer(options: HTTPServerOptions) {
       }
 
       await saveConfig(config);
+      clearLLMClientCache(); // 清理客户端缓存，实现热加载
 
       res.json({ success: true, model: config.models[modelIndex] });
     } catch (error) {
@@ -889,6 +893,7 @@ export async function createHTTPServer(options: HTTPServerOptions) {
       }
 
       await saveConfig(config);
+      clearLLMClientCache(); // 清理客户端缓存，实现热加载
 
       res.json({ success: true });
     } catch (error) {
