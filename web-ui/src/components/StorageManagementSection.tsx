@@ -196,7 +196,7 @@ export function StorageManagementSection() {
 
       const method = formMode === 'add' ? 'POST' : 'PUT';
 
-      const response = await fetch(url, {
+      const response = await authFetch(url, {
         method,
         headers: {
           'Content-Type': 'application/json',
