@@ -56,6 +56,8 @@ RUN npm rebuild better-sqlite3
 RUN npm run build
 
 # 预装 Playwright Chromium（打包进镜像，避免服务器启动时下载）
+# 将浏览器安装到 /app/.playwright，避免被 ~/:/root 卷挂载覆盖
+ENV PLAYWRIGHT_BROWSERS_PATH=/app/.playwright
 RUN npx playwright install chromium
 
 # 备份内置 skills，供首次启动时初始化持久化卷
