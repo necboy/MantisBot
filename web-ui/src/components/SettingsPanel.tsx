@@ -9,6 +9,7 @@ import { AllowedPathsSection } from './AllowedPathsSection';
 import { ChannelManagementSection } from './ChannelManagementSection';
 import { EmailConfigSection } from './EmailConfigSection';
 import { AuthSettingsSection } from './AuthSettingsSection';
+import { InstallSkillModal } from './InstallSkillModal';
 import { authFetch } from '../utils/auth';
 
 interface Skill {
@@ -32,6 +33,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [reloading, setReloading] = useState(false);
   const [activeTab, setActiveTab] = useState<'skills' | 'models' | 'profiles' | 'evolutions' | 'paths' | 'channels' | 'email' | 'auth'>('skills');
   const [activeProfile, setActiveProfile] = useState('default');
+  const [installModalOpen, setInstallModalOpen] = useState(false);
 
   // Fetch skills on mount
   useEffect(() => {
@@ -200,6 +202,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             onToggle={toggleSkill}
             onSearch={setSearchQuery}
             onReload={reloadSkills}
+            onInstall={() => setInstallModalOpen(true)}
           />
         ) : activeTab === 'models' ? (
           <ModelConfigSection />
@@ -220,6 +223,12 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           <EvolutionSection />
         )}
       </div>
+
+      <InstallSkillModal
+        isOpen={installModalOpen}
+        onClose={() => setInstallModalOpen(false)}
+        onInstalled={() => fetchSkills()}
+      />
     </div>
   );
 }

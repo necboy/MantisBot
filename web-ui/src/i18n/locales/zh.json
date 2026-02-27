@@ -159,7 +159,27 @@
     "skillsCount": "个 skills",
     "enabled": "已启用",
     "disabled": "已禁用",
-    "searchPlaceholder": "搜索 skills..."
+    "searchPlaceholder": "搜索 skills...",
+    "install": {
+      "title": "从 GitHub 安装 Skill",
+      "shortLabel": "安装",
+      "sourceLabel": "GitHub 来源",
+      "sourcePlaceholder": "owner/repo 或 GitHub URL",
+      "supportedFormats": "支持的格式",
+      "install": "安装",
+      "cancel": "取消",
+      "installing": "正在从 GitHub 获取并安装...",
+      "success": "安装成功",
+      "installedLabel": "已安装",
+      "enablePrompt": "是否立即启用这些 skill？",
+      "enableNow": "立即启用",
+      "later": "稍后手动启用",
+      "failed": "安装失败",
+      "close": "关闭",
+      "retry": "重试",
+      "networkError": "网络错误，请检查连接后重试",
+      "unknownError": "未知错误"
+    }
   },
   "approval": {
     "title": "审批模式",

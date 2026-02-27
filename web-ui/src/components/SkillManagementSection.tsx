@@ -1,4 +1,4 @@
-import { Search, ChevronDown, ChevronRight, FileCode, FileText, Palette, Apple, Wrench, Brain, Music, Utensils, MessageCircle, BookOpen, Folder, RotateCw } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, FileCode, FileText, Palette, Apple, Wrench, Brain, Music, Utensils, MessageCircle, BookOpen, Folder, RotateCw, Github } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
@@ -19,6 +19,7 @@ interface SkillManagementSectionProps {
   onToggle: (name: string) => void;
   onSearch: (query: string) => void;
   onReload: () => void;
+  onInstall: () => void;
 }
 
 // Skill category definitions
@@ -146,7 +147,8 @@ export function SkillManagementSection({
   reloading = false,
   onToggle,
   onSearch,
-  onReload
+  onReload,
+  onInstall
 }: SkillManagementSectionProps) {
   const { t } = useTranslation();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(SKILL_CATEGORIES.map(c => c.id)));
@@ -197,6 +199,16 @@ export function SkillManagementSection({
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
+
+          {/* Install from GitHub Button */}
+          <button
+            onClick={onInstall}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-600 dark:text-gray-400 transition-colors"
+            title={t('skills.install.title')}
+          >
+            <Github className="w-4 h-4" />
+            <span className="hidden sm:inline">{t('skills.install.shortLabel')}</span>
+          </button>
 
           {/* Reload Button */}
           <button

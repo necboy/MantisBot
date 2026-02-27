@@ -159,7 +159,27 @@
     "skillsCount": " skills",
     "enabled": "Enabled",
     "disabled": "Disabled",
-    "searchPlaceholder": "Search skills..."
+    "searchPlaceholder": "Search skills...",
+    "install": {
+      "title": "Install Skill from GitHub",
+      "shortLabel": "Install",
+      "sourceLabel": "GitHub Source",
+      "sourcePlaceholder": "owner/repo or GitHub URL",
+      "supportedFormats": "Supported formats",
+      "install": "Install",
+      "cancel": "Cancel",
+      "installing": "Fetching and installing from GitHub...",
+      "success": "Installation successful",
+      "installedLabel": "Installed",
+      "enablePrompt": "Would you like to enable these skills now?",
+      "enableNow": "Enable Now",
+      "later": "Enable Later",
+      "failed": "Installation failed",
+      "close": "Close",
+      "retry": "Retry",
+      "networkError": "Network error, please check your connection and try again",
+      "unknownError": "Unknown error"
+    }
   },
   "approval": {
     "title": "Approval Mode",

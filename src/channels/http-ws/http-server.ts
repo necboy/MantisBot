@@ -25,6 +25,7 @@ import profileRoutes from './profile-routes.js';
 import evolutionRoutes from './evolution-routes.js';
 import { broadcastToClients } from './ws-server.js';
 import type { SkillsLoader } from '../../agents/skills/loader.js';
+import { installSkillFromSource } from '../../agents/skills/github-installer.js';
 import { preferenceDetector } from '../../agents/preference-detector.js';
 import { evolutionProposer } from '../../agents/evolution-proposer.js';
 import { evolutionStore } from '../../agents/evolution-store.js';
@@ -792,6 +793,30 @@ export async function createHTTPServer(options: HTTPServerOptions) {
     } catch (error) {
       console.error('[HTTPServer] Failed to reload skills:', error);
       res.status(500).json({ error: 'Failed to reload skills' });
+    }
+  });
+
+  // 从 GitHub 安装 skill：下载仓库并复制到 skills 目录，随后热重载
+  app.post('/api/skills/install', async (req, res) => {
+    try {
+      const { source } = req.body as { source?: string };
+      if (!source?.trim()) {
+        res.status(400).json({ success: false, error: 'Missing source parameter' });
+        return;
+      }
+
+      const skillsDir = options.skillsLoader.getSkillsDir();
+      const result = await installSkillFromSource(source.trim(), skillsDir);
+
+      if (result.success) {
+        // Hot-reload so the newly installed skills are immediately visible
+        await options.skillsLoader.reload();
+      }
+
+      res.json(result);
+    } catch (error) {
+      console.error('[HTTPServer] Failed to install skill:', error);
+      res.status(500).json({ success: false, error: 'Internal server error' });
     }
   });
 

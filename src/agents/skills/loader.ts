@@ -94,6 +94,10 @@ export class SkillsLoader {
   /**
    * Check if a skill is available
    */
+  getSkillsDir(): string {
+    return SKILLS_DIR;
+  }
+
   hasSkill(name: string): boolean {
     return this.skills.has(name);
   }
