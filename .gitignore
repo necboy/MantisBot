@@ -63,3 +63,4 @@ coverage/
 yarn.lock
 pnpm-lock.yaml
 config/config.json
+docker-compose-prebuild.yaml
