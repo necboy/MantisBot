@@ -45,8 +45,9 @@ COPY package*.json ./
 COPY . .
 
 # 安装依赖（包括 devDependencies，因为需要 tsc）
-# 使用 --legacy-peer-deps 解决 zod 版本冲突（openai 需要 zod@3，但���目使用 zod@4）
-RUN npm ci --legacy-peer-deps
+# 使用 --legacy-peer-deps 解决 zod 版本冲突（openai 需要 zod@3，但项目使用 zod@4）
+# PUPPETEER_SKIP_DOWNLOAD=true 跳过 puppeteer 的浏览器下载（项目使用 Playwright，无需 puppeteer 的浏览器）
+RUN PUPPETEER_SKIP_DOWNLOAD=true npm ci --legacy-peer-deps
 
 # 重新编译 native 模块（适配 Linux，必须在 npm ci 之后）
 RUN npm rebuild better-sqlite3
