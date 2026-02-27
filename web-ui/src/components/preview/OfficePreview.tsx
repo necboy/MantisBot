@@ -1,4 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
+import { authFetch, appendTokenToUrl } from '../../utils/auth';
 
 interface OfficePreviewProps {
   filePath: string;
@@ -25,7 +26,7 @@ export function OfficePreview({ filePath, type, fileApiUrl, officePreviewServer 
     const backendPort = '8118';
     const isDev = window.location.port === '3081';
     const baseUrl = isDev ? `http://localhost:${backendPort}` : window.location.origin;
-    return `${baseUrl}/api/explore/binary?path=${encodeURIComponent(filePath)}`;
+    return appendTokenToUrl(`${baseUrl}/api/explore/binary?path=${encodeURIComponent(filePath)}`);
   }, [filePath, fileApiUrl]);
 
   // 计算 OnlyOffice 预览 URL
@@ -58,7 +59,7 @@ export function OfficePreview({ filePath, type, fileApiUrl, officePreviewServer 
           ? fileApiUrl
           : `/api/explore/binary?path=${encodeURIComponent(filePath)}`;
 
-        const res = await fetch(url);
+        const res = await authFetch(url);
         if (!res.ok) {
           throw new Error(`Failed to fetch file: ${res.status}`);
         }

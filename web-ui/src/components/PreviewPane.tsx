@@ -5,6 +5,7 @@ import { MarkdownPreview } from './preview/MarkdownPreview';
 import { TextPreview } from './preview/TextPreview';
 import { OfficePreview } from './preview/OfficePreview';
 import { PdfPreview } from './preview/PdfPreview';
+import { authFetch, appendTokenToUrl } from '../utils/auth';
 
 export interface FileItem {
   name: string;
@@ -71,7 +72,7 @@ export function PreviewPane({ file, officePreviewServer }: PreviewPaneProps) {
           ? file.fileApiUrl
           : `/api/explore/read?path=${encodeURIComponent(file.path)}`;
 
-        const res = await fetch(url);
+        const res = await authFetch(url);
         if (!res.ok) {
           const errData = await res.json().catch(() => ({}));
           throw new Error(errData.error || `HTTP ${res.status}`);
@@ -158,13 +159,13 @@ export function PreviewPane({ file, officePreviewServer }: PreviewPaneProps) {
 
   // 图片预览 - 优先使用 fileApiUrl（附件），否则使用 binary 端点
   if (IMAGE_EXTS.includes(ext)) {
-    const imageSrc = file.fileApiUrl || `/api/explore/binary?path=${encodeURIComponent(file.path)}`;
+    const imageSrc = appendTokenToUrl(file.fileApiUrl || `/api/explore/binary?path=${encodeURIComponent(file.path)}`);
     return <ImagePreview src={imageSrc} />;
   }
 
   // PDF 预览 - 优先使用 fileApiUrl（附件），否则使用 binary 端点
   if (PDF_EXTS.includes(ext)) {
-    const pdfSrc = file.fileApiUrl || `/api/explore/binary?path=${encodeURIComponent(file.path)}`;
+    const pdfSrc = appendTokenToUrl(file.fileApiUrl || `/api/explore/binary?path=${encodeURIComponent(file.path)}`);
     return <PdfPreview src={pdfSrc} />;
   }
 

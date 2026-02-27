@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FileItem } from './PreviewPane';
 import { StorageSelector } from './StorageSelector';
-import { authFetch } from '../utils/auth';
+import { authFetch, appendTokenToUrl } from '../utils/auth';
 
 type ViewMode = 'icons' | 'list' | 'columns';
 type SortField = 'name' | 'size' | 'modified';
@@ -235,7 +235,7 @@ export function FileManager({
       if (officeExtensions.includes(ext) && officePreviewServer) {
         // Office 文件：使用预览服务器
         // 构建文件 URL
-        const fileUrl = `${serverUrl}/api/explore/binary?path=${item.path}`;
+        const fileUrl = appendTokenToUrl(`${serverUrl}/api/explore/binary?path=${item.path}`);
 
         // 预览服务器 URL
         // 开发环境：直接访问预览服务器（避免路径问题）

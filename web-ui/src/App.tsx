@@ -19,7 +19,7 @@ import { CommandPalette } from './components/CommandPalette';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useTranslation } from 'react-i18next';
 import i18n from './i18n';
-import { getAuthHeaders, appendTokenToWsUrl, authFetch, clearAuthToken } from './utils/auth';
+import { getAuthHeaders, appendTokenToWsUrl, appendTokenToUrl, authFetch, clearAuthToken } from './utils/auth';
 import { generateUUID } from './utils/uuid';
 
 interface FileAttachment {
@@ -1091,7 +1091,7 @@ function App() {
       // 文件 URL：OnlyOffice 服务端需要从这个地址下载���件
       // 使用 /api/explore/binary 端点，因为它支持正确的 MIME 类型
       const backendPort = '8118';
-      const fileUrl = `${window.location.port === '3081' ? 'http://localhost:' + backendPort : window.location.origin}/api/explore/binary?path=${encodeURIComponent(filePath)}`;
+      const fileUrl = appendTokenToUrl(`${window.location.port === '3081' ? 'http://localhost:' + backendPort : window.location.origin}/api/explore/binary?path=${encodeURIComponent(filePath)}`);
 
       // 构建预览 URL
       // 开发模式：前端在 3081，需要直接访问 OnlyOffice (8081)

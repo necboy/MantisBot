@@ -44,11 +44,26 @@ export async function authFetch(input: RequestInfo, init: RequestInit = {}): Pro
 }
 
 /**
+ * 在 URL 上附加 token query param（用于 <img>、pdfjs 等无法设置请求头的场景）
+ *
+ * token 放在其他参数之前，确保 URL 仍以原始路径/文件名结尾。
+ * 例如：/api/explore/binary?path=file.docx → /api/explore/binary?token=xxx&path=file.docx
+ * 避免 OnlyOffice 等工具用 url.split('.').pop() 取扩展名时得到 "docx&token=xxx"。
+ */
+export function appendTokenToUrl(url: string): string {
+  const token = getAuthToken();
+  if (!token) return url;
+  const qmark = url.indexOf('?');
+  if (qmark === -1) {
+    return `${url}?token=${encodeURIComponent(token)}`;
+  }
+  // token 放在已有查询参数之前，URL 末尾仍是原始的 path 值（含文件扩展名）
+  return `${url.slice(0, qmark + 1)}token=${encodeURIComponent(token)}&${url.slice(qmark + 1)}`;
+}
+
+/**
  * 在 WebSocket URL 上附加 token query param
  */
 export function appendTokenToWsUrl(url: string): string {
-  const token = getAuthToken();
-  if (!token) return url;
-  const sep = url.includes('?') ? '&' : '?';
-  return `${url}${sep}token=${encodeURIComponent(token)}`;
+  return appendTokenToUrl(url);
 }
