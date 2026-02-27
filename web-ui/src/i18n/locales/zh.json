@@ -64,7 +64,8 @@
     "agentProfile": "Agent 人格",
     "evolution": "演变记录",
     "allowedPaths": "目录权限",
-    "channelManagement": "通信渠道"
+    "channelManagement": "通信渠道",
+    "emailConfig": "邮件配置"
   },
   "channelManagement": {
     "channels": "渠道管理",

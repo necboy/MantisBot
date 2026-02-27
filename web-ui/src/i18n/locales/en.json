@@ -64,7 +64,8 @@
     "agentProfile": "Agent Profile",
     "evolution": "Evolution History",
     "allowedPaths": "Allowed Paths",
-    "channelManagement": "Channels"
+    "channelManagement": "Channels",
+    "emailConfig": "Email Config"
   },
   "channelManagement": {
     "channels": "Channel Management",

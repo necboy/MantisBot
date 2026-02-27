@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageCircle, Settings, Plus, Bot, FileText, Download, Image, Trash2, ExternalLink, Clock, LayoutDashboard, Wifi, FolderOpen, Square } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -11,6 +11,7 @@ import { NotificationPanel, Notification } from './components/NotificationPanel'
 import { NotificationDetail } from './components/NotificationDetail';
 import { FileReferenceTags } from './components/FileReferenceTags';  // 新增
 import { SettingsPanel } from './components/SettingsPanel';
+import { ModelConfigPrompt, useModelConfigCheck, markModelConfigPending, markModelConfigured } from './components/ModelConfigPrompt';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { SkillChainDisplay } from './components/SkillChainDisplay';
 import { CommandPalette } from './components/CommandPalette';
@@ -270,6 +271,9 @@ function App() {
   // 设置面板状态
   const [settingsOpen, setSettingsOpen] = useState(false);
 
+  // 首次启动模型配置提示状态
+  const [modelConfigPromptOpen, setModelConfigPromptOpen] = useState(false);
+
   // 当前使用的 skill（来自 plugin）- 仅用于即时显示
   const [activeSkill, setActiveSkill] = useState<{ name: string; location: string } | null>(null);
 
@@ -324,6 +328,14 @@ function App() {
       clearInterval(healthCheckInterval);
     };
   }, []);
+
+  // 首次启动模型配置检测
+  const handleModelConfigPromptRequired = useCallback(() => {
+    setModelConfigPromptOpen(true);
+  }, []);
+
+  // 在后端连接成功后进行模型配置检测
+  useModelConfigCheck(handleModelConfigPromptRequired);
 
   // 调试：跟踪 activeSkill 变化
   useEffect(() => {
@@ -862,7 +874,9 @@ function App() {
       const data = await res.json();
       setConfig(data);
       if (data.models?.length > 0) {
-        setSelectedModel(data.models[0].name);
+        // 优先使用 defaultModel，否则使用第一个模型
+        const defaultModelName = data.defaultModel || data.models[0].name;
+        setSelectedModel(defaultModelName);
       }
     } catch (e) {
       console.error('Failed to fetch config:', e);
@@ -1637,7 +1651,7 @@ function App() {
         {/* Model selector & Notification Bell */}
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-shrink-0 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            {config?.models && config.models.length > 1 && (
+            {config?.models && config.models.length >= 1 && (
               <select
                 value={selectedModel}
                 onChange={e => setSelectedModel(e.target.value)}
@@ -2125,8 +2139,36 @@ function App() {
       {/* Settings Panel */}
       <SettingsPanel
         isOpen={settingsOpen}
-        onClose={() => setSettingsOpen(false)}
+        onClose={async () => {
+          setSettingsOpen(false);
+          // 关闭设置面板时检查模型配置，标记为已配置
+          try {
+            const res = await fetch('/api/models');
+            if (res.ok) {
+              const data = await res.json();
+              const models = data.models || [];
+              const hasValidModel = models.some((m: { apiKey?: string; model?: string }) => m.apiKey && m.apiKey !== '***' && m.model);
+              if (hasValidModel) {
+                markModelConfigured();
+              }
+            }
+          } catch (err) {
+            console.error('Failed to check model config on settings close:', err);
+          }
+        }}
       />
+
+      {/* 首次启动模型配置提示 */}
+      {modelConfigPromptOpen && (
+        <ModelConfigPrompt
+          onClose={() => setModelConfigPromptOpen(false)}
+          onOpenSettings={() => {
+            markModelConfigPending(); // 标记用户正在配置，防止再次弹窗
+            setModelConfigPromptOpen(false);
+            setSettingsOpen(true);
+          }}
+        />
+      )}
 
       {/* Command Palette - 命令面板 */}
       {commandPaletteOpen && (

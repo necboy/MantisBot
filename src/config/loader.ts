@@ -54,44 +54,55 @@ export function getDefaultConfig(): Config {
   return {
     server: {
       host: '0.0.0.0',
-      port: 3000,
+      port: 8118,
       cors: true,
       wsPath: '/ws',
     },
     models: [
       {
-        name: 'default',
-        provider: 'minimax',
-        model: 'abab6.5s-chat',
+        name: 'MiniMax',
+        protocol: 'anthropic',
+        model: 'MiniMax-M2.5',
+        apiKey: process.env.MINIMAX_API_KEY || '',
+        baseURL: 'https://api.minimaxi.com/anthropic',
       },
     ],
-    feishu: {
-      enabled: false,
-    },
-    slack: {
-      enabled: false,
+    defaultModel: 'MiniMax',
+    agent: {
+      disablePreferenceDetector: true,
+      disableEvolutionProposer: true,
     },
     channels: {
       httpWs: {
         enabled: true,
       },
-      feishu: {
-        enabled: false,
-      },
-      slack: {
-        enabled: false,
-      },
     },
-    plugins: [],
-    memory: {
-      enabled: true,
-      vectorDimension: 1536,
-    },
-    enabledSkills: [],
+    plugins: [
+      { name: 'document', enabled: true },
+      { name: 'logger', enabled: true },
+    ],
+    workspace: './data',
+    allowedPaths: [],
+    enabledSkills: [
+      'pptx',
+      'xlsx',
+      'apple-notes',
+      'apple-reminders',
+      'bear-notes',
+      'himalaya',
+      'things-mac',
+      'coding-agent',
+      'skill-creator',
+      'deep-research',
+      'weather',
+      'docx',
+      'pdf',
+      'stock-financial-data',
+      'brainstorming',
+    ],
     disabledSkills: [],
     activeProfile: 'default',
-    allowedPaths: [],
-  };
+  } as Config;
 }
 
 export function updateConfig(updates: Partial<Config>): Config {

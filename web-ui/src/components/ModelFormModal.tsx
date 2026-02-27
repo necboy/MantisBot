@@ -410,6 +410,21 @@ export function ModelFormModal({ isOpen, onClose, model, onSave }: ModelFormModa
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
+          {/* 推荐信息 */}
+          <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+            <p className="text-sm text-blue-700 dark:text-blue-300">
+              <strong>推荐：</strong>使用 MiniMax Coding Plan，性价比高，适合编程任务。
+              <a
+                href="https://platform.minimaxi.com/subscribe/coding-plan"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="ml-1 text-blue-600 dark:text-blue-400 underline hover:text-blue-800 dark:hover:text-blue-200"
+              >
+                立即注册 →
+              </a>
+            </p>
+          </div>
+
           {/* Error Message */}
           {error && (
             <div className="flex items-start gap-2 p-3 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300 rounded-lg">
