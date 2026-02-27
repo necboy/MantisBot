@@ -114,17 +114,25 @@ export function CanvasPanel({
   const browserContainerRef = useRef<HTMLDivElement>(null);
   const [browserAutoScroll, setBrowserAutoScroll] = useState(true);
 
+  // 标记下一次 onPathChange 是否来自 homeDirectory 自动同步（不应触发 workdir 更新）
+  const skipNextWorkDirUpdateRef = useRef(false);
+
   // 当 homeDirectory 从 API 获取后更新时，同步到 fileManagerPath
   useEffect(() => {
     if (homeDirectory && homeDirectory !== '/') {
+      skipNextWorkDirUpdateRef.current = true; // 本次路径变化由系统同步，非用户导航
       setFileManagerPath(homeDirectory);
     }
   }, [homeDirectory]);
 
-  // 处理文件管理器路径变化，同时更新工作目录
+  // 处理文件管理器路径变化，同时更新工作目录（仅用户主动导航时才触发）
   const handleFileManagerPathChange = (newPath: string) => {
     setFileManagerPath(newPath);
-    // 通知父组件更新工作目录
+    // 若本次变化来自 homeDirectory 自动同步，跳过 workdir 更新，避免触发 400 错误
+    if (skipNextWorkDirUpdateRef.current) {
+      skipNextWorkDirUpdateRef.current = false;
+      return;
+    }
     if (onWorkDirChange) {
       onWorkDirChange(newPath);
     }

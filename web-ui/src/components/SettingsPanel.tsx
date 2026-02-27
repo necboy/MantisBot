@@ -29,6 +29,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [reloading, setReloading] = useState(false);
   const [activeTab, setActiveTab] = useState<'skills' | 'models' | 'profiles' | 'evolutions' | 'paths' | 'channels' | 'email' | 'auth'>('skills');
   const [activeProfile, setActiveProfile] = useState('default');
 
@@ -47,6 +48,19 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       setSkills(data.skills);
     } catch (err) {
       console.error('Failed to fetch skills:', err);
+    }
+  }
+
+  async function reloadSkills() {
+    setReloading(true);
+    try {
+      const res = await authFetch('/api/skills/reload', { method: 'POST' });
+      if (!res.ok) throw new Error('Failed to reload skills');
+      await fetchSkills();
+    } catch (err) {
+      console.error('Failed to reload skills:', err);
+    } finally {
+      setReloading(false);
     }
   }
 
@@ -182,8 +196,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             skills={skills}
             searchQuery={searchQuery}
             loading={loading}
+            reloading={reloading}
             onToggle={toggleSkill}
             onSearch={setSearchQuery}
+            onReload={reloadSkills}
           />
         ) : activeTab === 'models' ? (
           <ModelConfigSection />

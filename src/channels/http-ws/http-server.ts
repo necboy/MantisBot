@@ -744,6 +744,18 @@ export async function createHTTPServer(options: HTTPServerOptions) {
     }
   });
 
+  // 热重载 skills：重新扫描 skills 目录，无需重启服务（必须在 /:name/toggle 之前注册）
+  app.post('/api/skills/reload', async (_, res) => {
+    try {
+      const { count } = await options.skillsLoader.reload();
+      console.log(`[HTTPServer] Skills reloaded: ${count} skills found`);
+      res.json({ success: true, count });
+    } catch (error) {
+      console.error('[HTTPServer] Failed to reload skills:', error);
+      res.status(500).json({ error: 'Failed to reload skills' });
+    }
+  });
+
   // Toggle skill enabled/disabled status
   // 修改 enabledSkills 列表：添加或移除 skill 名称
   app.post('/api/skills/:name/toggle', async (req, res) => {

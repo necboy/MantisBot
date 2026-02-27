@@ -50,6 +50,16 @@ export class SkillsLoader {
     }
   }
 
+  /**
+   * 热重载：清空缓存后重新扫描 skills 目录，无需重启服务
+   */
+  async reload(): Promise<{ count: number }> {
+    this.skills.clear();
+    this.allSkills = [];
+    await this.load();
+    return { count: this.skills.size };
+  }
+
   get(name: string): LoadedSkill | undefined {
     return this.skills.get(name);
   }

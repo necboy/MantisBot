@@ -1,4 +1,4 @@
-import { Search, ChevronDown, ChevronRight, FileCode, FileText, Palette, Apple, Wrench, Brain, Music, Utensils, MessageCircle, BookOpen, Folder } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, FileCode, FileText, Palette, Apple, Wrench, Brain, Music, Utensils, MessageCircle, BookOpen, Folder, RotateCw } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
@@ -15,8 +15,10 @@ interface SkillManagementSectionProps {
   skills: Skill[];
   searchQuery: string;
   loading: boolean;
+  reloading?: boolean;
   onToggle: (name: string) => void;
   onSearch: (query: string) => void;
+  onReload: () => void;
 }
 
 // Skill category definitions
@@ -141,8 +143,10 @@ export function SkillManagementSection({
   skills,
   searchQuery,
   loading,
+  reloading = false,
   onToggle,
-  onSearch
+  onSearch,
+  onReload
 }: SkillManagementSectionProps) {
   const { t } = useTranslation();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(SKILL_CATEGORIES.map(c => c.id)));
@@ -193,6 +197,17 @@ export function SkillManagementSection({
               className="w-full pl-10 pr-4 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-primary-500"
             />
           </div>
+
+          {/* Reload Button */}
+          <button
+            onClick={onReload}
+            disabled={reloading}
+            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-600 dark:text-gray-400 disabled:opacity-50 transition-colors"
+            title="重新加载 skills（无需重启服务）"
+          >
+            <RotateCw className={`w-4 h-4 ${reloading ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{reloading ? '加载中...' : '重新加载'}</span>
+          </button>
 
           {/* View Mode Toggle */}
           <div className="flex items-center bg-gray-100 dark:bg-gray-800 rounded-lg p-0.5">
