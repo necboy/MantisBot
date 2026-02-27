@@ -1,6 +1,22 @@
 #!/bin/bash
 set -e
 
+# 初始化 skills 目录：卷首次挂载时为空，从内置备份复制
+# 已有内容（用户自建 skill）则跳过，不覆盖
+if [ -z "$(ls -A /app/skills 2>/dev/null)" ]; then
+  echo "[Entrypoint] Initializing skills from built-in defaults..."
+  cp -r /app/skills-default/. /app/skills/
+  echo "[Entrypoint] Skills initialized."
+fi
+
+# 初始化人格文件：首次启动时从备份复制默认人格
+if [ ! -d "/app/data/agent-profiles" ] || [ -z "$(ls -A /app/data/agent-profiles 2>/dev/null)" ]; then
+  echo "[Entrypoint] Initializing agent profiles from built-in defaults..."
+  mkdir -p /app/data/agent-profiles
+  cp -r /app/agent-profiles-default/. /app/data/agent-profiles/
+  echo "[Entrypoint] Agent profiles initialized."
+fi
+
 # 确保 Python 虚拟环境存在且可用
 if [ ! -f "/app/python-venv/bin/activate" ]; then
   echo "[Entrypoint] Creating Python virtual environment..."
@@ -57,13 +73,5 @@ if ! python3 -c "import requests" 2>/dev/null; then
   echo "[Entrypoint] Python packages installed successfully!"
 fi
 
-# 检查 Playwright Chromium 是否已安装
-if [ ! -d "/root/.cache/ms-playwright/chromium-"* ] 2>/dev/null; then
-  echo "[Entrypoint] Installing Playwright Chromium..."
-  # 使用项目中的 playwright 依赖安装浏览器
-  npx playwright install chromium
-  echo "[Entrypoint] Playwright Chromium installed successfully!"
-fi
-
-# 启��应用
+# 启动应用
 exec node dist/entry.js

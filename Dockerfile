@@ -54,6 +54,15 @@ RUN npm rebuild better-sqlite3
 # 编译 TypeScript
 RUN npm run build
 
+# 预装 Playwright Chromium（打包进镜像，避免服务器启动时下载）
+RUN npx playwright install chromium
+
+# 备份内置 skills，供首次启动时初始化持久化卷
+RUN cp -r /app/skills /app/skills-default
+
+# 备份默认人格文件，供首次启动时初始化
+RUN cp -r /app/data/agent-profiles /app/agent-profiles-default
+
 # 暴露端口
 EXPOSE 8118
 

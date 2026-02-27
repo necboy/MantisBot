@@ -1,10 +1,12 @@
 # MantisBot Docker 镜像构建和发布
 # 用法:
-#   make build        - 构建所有镜像
-#   make push         - 推送镜像到仓库
-#   make release      - 构建并推送（完整发布）
-#   make run          - 本地运行 docker-compose
-#   make clean        - 清理本地镜像
+#   make build            - 构建所有镜像（本地单平台）
+#   make push             - 推送所有镜像到仓库
+#   make release          - 多平台构建并推送全部镜像
+#   make release-backend  - 仅构建并推送后端镜像
+#   make release-webui    - 仅构建并推送前端镜像
+#   make run              - 本地运行 docker-compose
+#   make clean            - 清理本地镜像
 
 # 配置变量（可通过环境变量覆盖）
 REGISTRY ?= docker.io
@@ -20,7 +22,7 @@ WEBUI_IMAGE := $(REGISTRY)/$(IMAGE_PREFIX)/mantis-bot-webui
 # 平台支持
 PLATFORMS ?= linux/arm64,linux/amd64
 
-.PHONY: help build build-backend build-webui push push-backend push-webui release run stop clean tag-latest
+.PHONY: help build build-backend build-webui push push-backend push-webui release release-backend release-webui run stop clean tag-latest
 
 help: ## 显示帮助信息
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}'
@@ -109,10 +111,16 @@ tag-latest: ## 为当前版本打 latest 标签
 # 发布流程
 # ============================================
 
-release: buildx ## 完整发布流程（多平台构建并推送）
+release: buildx ## 完整发布流程（多平台构建并推送全部镜像）
 	@echo "🚀 发布完成!"
 	@echo "   后端镜像: $(BACKEND_IMAGE):$(VERSION)"
 	@echo "   Web UI: $(WEBUI_IMAGE):$(VERSION)"
+
+release-backend: buildx-backend ## 仅构建并推送后端镜像
+	@echo "🚀 后端发布完成: $(BACKEND_IMAGE):$(VERSION)"
+
+release-webui: buildx-webui ## 仅构建并推送前端镜像
+	@echo "🚀 前端发布完成: $(WEBUI_IMAGE):$(VERSION)"
 
 # ============================================
 # 本地运行
