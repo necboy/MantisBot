@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, FolderOpen, AlertCircle, Info } from 'lucide-react';
+import { authFetch } from '../utils/auth';
 
 export function AllowedPathsSection() {
   const [allowedPaths, setAllowedPaths] = useState<string[]>([]);
@@ -14,7 +15,7 @@ export function AllowedPathsSection() {
   async function fetchAllowedPaths() {
     setLoading(true);
     try {
-      const res = await fetch('/api/config/allowed-paths');
+      const res = await authFetch('/api/config/allowed-paths');
       if (res.ok) {
         const data = await res.json();
         setAllowedPaths(data.allowedPaths || []);
@@ -29,7 +30,7 @@ export function AllowedPathsSection() {
   async function saveAllowedPaths(paths: string[]) {
     setSaving(true);
     try {
-      const res = await fetch('/api/config/allowed-paths', {
+      const res = await authFetch('/api/config/allowed-paths', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ allowedPaths: paths })

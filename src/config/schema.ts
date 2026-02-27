@@ -8,6 +8,12 @@ export const ServerConfigSchema = z.object({
   cors: z.boolean().default(true),
   wsPath: z.string().default('/ws'),
   bind: z.string().optional(),
+  // 访问鉴权配置
+  auth: z.object({
+    enabled: z.boolean().default(false),
+    username: z.string().default('admin'),
+    password: z.string().default(''),
+  }).optional(),
   tailscale: z.object({
     enabled: z.boolean().default(false),
     mode: z.string().optional(),

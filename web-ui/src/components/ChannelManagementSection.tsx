@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChannelFormModal } from './ChannelFormModal';
+import { authFetch } from '../utils/auth';
 
 interface ChannelField {
   key: string;
@@ -56,7 +57,7 @@ export function ChannelManagementSection({ isOpen }: ChannelManagementSectionPro
 
   async function fetchChannels() {
     try {
-      const res = await fetch('/api/channels');
+      const res = await authFetch('/api/channels');
       const data = await res.json();
       setChannels(data.channels);
     } catch (err) {
@@ -66,7 +67,7 @@ export function ChannelManagementSection({ isOpen }: ChannelManagementSectionPro
 
   async function fetchDefinitions() {
     try {
-      const res = await fetch('/api/channels/definitions');
+      const res = await authFetch('/api/channels/definitions');
       const data = await res.json();
       setDefinitions(data.definitions);
     } catch (err) {
@@ -77,7 +78,7 @@ export function ChannelManagementSection({ isOpen }: ChannelManagementSectionPro
   async function toggleChannel(id: string, enabled: boolean) {
     setLoading(true);
     try {
-      await fetch(`/api/channels/${id}/toggle`, {
+      await authFetch(`/api/channels/${id}/toggle`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled }),
@@ -95,7 +96,7 @@ export function ChannelManagementSection({ isOpen }: ChannelManagementSectionPro
     setTestResults(prev => ({ ...prev, [id]: { success: false, message: t('channelManagement.testing') } }));
 
     try {
-      const res = await fetch(`/api/channels/${id}/test`, { method: 'POST' });
+      const res = await authFetch(`/api/channels/${id}/test`, { method: 'POST' });
       const data = await res.json();
 
       setTestResults(prev => ({
@@ -123,7 +124,7 @@ export function ChannelManagementSection({ isOpen }: ChannelManagementSectionPro
 
     setLoading(true);
     try {
-      await fetch(`/api/channels/${id}`, { method: 'DELETE' });
+      await authFetch(`/api/channels/${id}`, { method: 'DELETE' });
       setChannels(prev => prev.filter(c => c.id !== id));
     } catch (err) {
       console.error('Failed to delete channel:', err);
@@ -145,7 +146,7 @@ export function ChannelManagementSection({ isOpen }: ChannelManagementSectionPro
   async function handleSave(data: { id: string; enabled: boolean; config: Record<string, any> }) {
     setLoading(true);
     try {
-      await fetch('/api/channels', {
+      await authFetch('/api/channels', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Check, X, RefreshCw, FileText, Clock, User } from 'lucide-react';
+import { authFetch } from '../utils/auth';
 
 interface EvolutionProposal {
   id: string;
@@ -27,7 +28,7 @@ export function EvolutionSection() {
   async function fetchProposals() {
     setLoading(true);
     try {
-      const res = await fetch('/api/evolutions');
+      const res = await authFetch('/api/evolutions');
       const data = await res.json();
       setProposals(data.proposals || []);
     } catch (err) {
@@ -39,7 +40,7 @@ export function EvolutionSection() {
 
   async function handleApprove(id: string) {
     try {
-      await fetch(`/api/evolutions/${id}/approve`, { method: 'PUT' });
+      await authFetch(`/api/evolutions/${id}/approve`, { method: 'PUT' });
       await fetchProposals();
     } catch (err) {
       console.error('Failed to approve evolution:', err);
@@ -48,7 +49,7 @@ export function EvolutionSection() {
 
   async function handleReject(id: string) {
     try {
-      await fetch(`/api/evolutions/${id}/reject`, { method: 'PUT' });
+      await authFetch(`/api/evolutions/${id}/reject`, { method: 'PUT' });
       await fetchProposals();
     } catch (err) {
       console.error('Failed to reject evolution:', err);

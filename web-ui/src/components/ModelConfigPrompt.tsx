@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Settings, AlertCircle } from 'lucide-react';
+import { authFetch } from '../utils/auth';
 
 interface Model {
   name: string;
@@ -97,7 +98,7 @@ export function useModelConfigCheck(onPromptRequired: () => void) {
       }
 
       try {
-        const res = await fetch('/api/models');
+        const res = await authFetch('/api/models');
         if (!res.ok) {
           setChecked(true);
           return;

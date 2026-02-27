@@ -7,6 +7,7 @@ import type { SessionManager } from '../../session/manager.js';
 import type { ToolRegistry } from '../../agents/tools/registry.js';
 import { getConfig, loadConfig, saveConfig } from '../../config/loader.js';
 import type { Config, EmailAccount, EmailConfig } from '../../config/schema.js';
+import { createAuthMiddleware, computeToken, hashPassword, verifyPassword } from './auth-middleware.js';
 import { EMAIL_PROVIDERS } from '../../config/schema.js';
 import type { Message } from '../../types.js';
 // AgentRunner 已移除，统一使用 ClaudeAgentRunner
@@ -146,7 +147,88 @@ export async function createHTTPServer(options: HTTPServerOptions) {
     res.json({ status: 'ok', timestamp: Date.now() });
   });
 
-  // Session routes
+  // 鉴权路由（不受 auth 中间件保护）
+  app.post('/api/auth/login', (req, res) => {
+    const cfg = getConfig();
+    const authCfg = cfg.server?.auth;
+
+    // 鉴权未启用，直接返回成功
+    if (!authCfg?.enabled) {
+      return res.json({ token: null, authEnabled: false });
+    }
+
+    const { username, password } = req.body || {};
+    if (username === authCfg.username && verifyPassword(password, authCfg.password)) {
+      const token = computeToken(authCfg.username, authCfg.password);
+      return res.json({ token, authEnabled: true });
+    }
+    return res.status(401).json({ error: 'Invalid credentials', message: '账户或密码错误' });
+  });
+
+  app.get('/api/auth/check', (req, res) => {
+    const cfg = getConfig();
+    const authCfg = cfg.server?.auth;
+
+    if (!authCfg?.enabled) {
+      return res.json({ authEnabled: false, authenticated: true });
+    }
+
+    const authHeader = req.headers['authorization'];
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : (req.query?.token as string);
+    const expectedToken = computeToken(authCfg.username, authCfg.password);
+    const authenticated = token === expectedToken;
+    return res.json({ authEnabled: true, authenticated });
+  });
+
+  // 应用鉴权中间件（保护所有 /api/* 路由，/api/auth/* 已在上面注册，不受影响）
+  app.use('/api', createAuthMiddleware());
+
+  // 修改鉴权凭据（受 auth 中间件保护）
+  app.put('/api/config/auth', async (req, res) => {
+    const cfg = getConfig();
+    const authCfg = cfg.server?.auth;
+
+    if (!authCfg?.enabled) {
+      return res.status(400).json({ error: 'Auth not enabled', message: '鉴权未启用' });
+    }
+
+    const { username, currentPassword, newPassword } = req.body || {};
+
+    // 验证当前密码
+    if (!verifyPassword(currentPassword, authCfg.password)) {
+      return res.status(401).json({ error: 'Invalid credentials', message: '当前密码错误' });
+    }
+
+    if (!newPassword || newPassword.length < 6) {
+      return res.status(400).json({ error: 'Invalid password', message: '新密码长度不能少于 6 位' });
+    }
+
+    // 存储哈希后的新密码
+    const hashedPassword = hashPassword(newPassword);
+    const newUsername = (username && username.trim()) ? username.trim() : authCfg.username;
+
+    const newConfig: Config = {
+      ...cfg,
+      server: {
+        ...cfg.server,
+        auth: {
+          ...authCfg,
+          username: newUsername,
+          password: hashedPassword,
+        },
+      },
+    };
+
+    try {
+      await saveConfig(newConfig);
+      // 返回新 token，以便前端更新 localStorage
+      const newToken = computeToken(newUsername, hashedPassword);
+      return res.json({ success: true, token: newToken, message: '凭据已更新' });
+    } catch (err) {
+      console.error('[Auth] Failed to save config:', err);
+      return res.status(500).json({ error: 'Save failed', message: '保存配置失败' });
+    }
+  });
   app.get('/api/sessions', (_, res) => {
     const sessions = options.sessionManager.listSessions();
     res.json(sessions.map(s => ({

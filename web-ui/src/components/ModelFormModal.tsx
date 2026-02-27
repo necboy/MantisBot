@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, AlertCircle, CheckCircle, Loader2 } from 'lucide-react';
+import { authFetch } from '../utils/auth';
 
 // 提供商配置：支持 OpenAI 和 Anthropic 两种协议的端点
 export const MODEL_PROVIDERS: Record<string, {
@@ -271,7 +272,7 @@ export function ModelFormModal({ isOpen, onClose, model, onSave }: ModelFormModa
     setTestResult(null);
 
     try {
-      const response = await fetch('/api/models/test', {
+      const response = await authFetch('/api/models/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

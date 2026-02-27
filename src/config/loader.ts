@@ -57,6 +57,11 @@ export function getDefaultConfig(): Config {
       port: 8118,
       cors: true,
       wsPath: '/ws',
+      auth: {
+        enabled: true,
+        username: 'admin',
+        password: 'sha256:059a00192592d5444bc0caad7203f98b506332e2cf7abb35d684ea9bf7c18f08',
+      },
     },
     models: [
       {

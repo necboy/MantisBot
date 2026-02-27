@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Play, Pause, Trash2, Plus, Clock, RefreshCw } from 'lucide-react';
+import { authFetch } from '../utils/auth';
 
 interface CronJob {
   id: string;
@@ -63,7 +64,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
   async function loadJobs() {
     setLoading(true);
     try {
-      const res = await fetch('/api/cron/list?includeDisabled=true');
+      const res = await authFetch('/api/cron/list?includeDisabled=true');
       const data = await res.json();
       setJobs(data.jobs || []);
     } catch (err) {
@@ -75,7 +76,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
 
   async function toggleJob(job: CronJob) {
     try {
-      await fetch('/api/cron/update', {
+      await authFetch('/api/cron/update', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -91,7 +92,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
 
   async function runJob(job: CronJob) {
     try {
-      await fetch('/api/cron/run', {
+      await authFetch('/api/cron/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: job.id })
@@ -106,7 +107,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
     if (!confirm(`确定删除任务 "${job.name}"？`)) return;
 
     try {
-      await fetch('/api/cron/remove', {
+      await authFetch('/api/cron/remove', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id: job.id })
@@ -138,7 +139,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
         ? { kind: 'systemEvent', text: formData.payloadText }
         : { kind: 'agentTurn', message: formData.payloadText };
 
-      await fetch('/api/cron/add', {
+      await authFetch('/api/cron/add', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

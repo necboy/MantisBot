@@ -8,6 +8,8 @@ import { EvolutionSection } from './EvolutionSection';
 import { AllowedPathsSection } from './AllowedPathsSection';
 import { ChannelManagementSection } from './ChannelManagementSection';
 import { EmailConfigSection } from './EmailConfigSection';
+import { AuthSettingsSection } from './AuthSettingsSection';
+import { authFetch } from '../utils/auth';
 
 interface Skill {
   name: string;
@@ -27,7 +29,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [skills, setSkills] = useState<Skill[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'skills' | 'models' | 'profiles' | 'evolutions' | 'paths' | 'channels' | 'email'>('skills');
+  const [activeTab, setActiveTab] = useState<'skills' | 'models' | 'profiles' | 'evolutions' | 'paths' | 'channels' | 'email' | 'auth'>('skills');
   const [activeProfile, setActiveProfile] = useState('default');
 
   // Fetch skills on mount
@@ -39,7 +41,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
   async function fetchSkills() {
     try {
-      const res = await fetch('/api/skills');
+      const res = await authFetch('/api/skills');
       if (!res.ok) throw new Error('Failed to fetch skills');
       const data = await res.json();
       setSkills(data.skills);
@@ -51,7 +53,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   async function toggleSkill(skillName: string) {
     setLoading(true);
     try {
-      const res = await fetch(`/api/skills/${skillName}/toggle`, {
+      const res = await authFetch(`/api/skills/${skillName}/toggle`, {
         method: 'POST'
       });
       if (!res.ok) throw new Error('Failed to toggle skill');
@@ -161,6 +163,16 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             >
               {t('settings.emailConfig') || '邮件配置'}
             </button>
+            <button
+              onClick={() => setActiveTab('auth')}
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'auth'
+                  ? 'text-primary-600 border-primary-600'
+                  : 'text-gray-500 border-transparent hover:text-gray-700'
+              }`}
+            >
+              访问鉴权
+            </button>
           </div>
         </div>
 
@@ -186,6 +198,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           <ChannelManagementSection isOpen={activeTab === 'channels'} />
         ) : activeTab === 'email' ? (
           <EmailConfigSection />
+        ) : activeTab === 'auth' ? (
+          <AuthSettingsSection />
         ) : (
           <EvolutionSection />
         )}

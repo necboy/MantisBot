@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Star, Edit2, Mail, CheckCircle, XCircle, Wifi, ToggleLeft, ToggleRight } from 'lucide-react';
 import { EmailFormModal, EMAIL_PROVIDERS } from './EmailFormModal';
+import { authFetch } from '../utils/auth';
 
 interface EmailAccount {
   id: string;
@@ -64,7 +65,7 @@ export function EmailConfigSection() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/email/config');
+      const res = await authFetch('/api/email/config');
       if (!res.ok) throw new Error('Failed to fetch email config');
       const data = await res.json();
       setConfig({
@@ -87,7 +88,7 @@ export function EmailConfigSection() {
 
     try {
       setLoading(true);
-      const res = await fetch(`/api/email/accounts/${encodeURIComponent(accountId)}`, {
+      const res = await authFetch(`/api/email/accounts/${encodeURIComponent(accountId)}`, {
         method: 'DELETE'
       });
       if (!res.ok) throw new Error('Failed to delete account');
@@ -109,7 +110,7 @@ export function EmailConfigSection() {
   async function setDefaultAccount(accountId: string) {
     try {
       setLoading(true);
-      const res = await fetch(`/api/email/accounts/${encodeURIComponent(accountId)}/default`, {
+      const res = await authFetch(`/api/email/accounts/${encodeURIComponent(accountId)}/default`, {
         method: 'PUT'
       });
       if (!res.ok) throw new Error('Failed to set default account');
@@ -125,7 +126,7 @@ export function EmailConfigSection() {
   async function toggleEnabled(accountId: string, enabled: boolean) {
     try {
       setLoading(true);
-      const res = await fetch(`/api/email/accounts/${encodeURIComponent(accountId)}`, {
+      const res = await authFetch(`/api/email/accounts/${encodeURIComponent(accountId)}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled }),
@@ -145,7 +146,7 @@ export function EmailConfigSection() {
       setTestingAccountId(account.id);
       setTestResults(prev => ({ ...prev, [account.id]: { success: false, message: '测试中...' } }));
 
-      const res = await fetch('/api/email/test', {
+      const res = await authFetch('/api/email/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

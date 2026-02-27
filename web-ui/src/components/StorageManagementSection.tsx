@@ -15,6 +15,7 @@ import {
   X
 } from 'lucide-react';
 import { StorageProviderForm } from './StorageProviderForm';
+import { authFetch } from '../utils/auth';
 
 interface StorageProvider {
   id: string;
@@ -54,7 +55,7 @@ export function StorageManagementSection() {
   // 加载存储提供者列表
   const loadProviders = async () => {
     try {
-      const response = await fetch('/api/storage/providers');
+      const response = await authFetch('/api/storage/providers');
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -69,7 +70,7 @@ export function StorageManagementSection() {
   // 加载当前存储提供者
   const loadCurrentProvider = async () => {
     try {
-      const response = await fetch('/api/storage/current');
+      const response = await authFetch('/api/storage/current');
       if (response.ok) {
         const data = await response.json();
         setCurrentProvider(data);
@@ -123,7 +124,7 @@ export function StorageManagementSection() {
 
     // 获取完整的 provider 配置（包含密码）
     try {
-      const response = await fetch(`/api/storage/providers/${provider.id}`);
+      const response = await authFetch(`/api/storage/providers/${provider.id}`);
       if (response.ok) {
         const fullProvider = await response.json();
         setEditingProvider(fullProvider);
@@ -148,7 +149,7 @@ export function StorageManagementSection() {
 
     setDeletingId(id);
     try {
-      const response = await fetch(`/api/storage/providers/${id}`, {
+      const response = await authFetch(`/api/storage/providers/${id}`, {
         method: 'DELETE',
       });
 
@@ -170,7 +171,7 @@ export function StorageManagementSection() {
   const handleTestConnection = async (id: string) => {
     setTestingId(id);
     try {
-      const response = await fetch(`/api/storage/test/${id}`, {
+      const response = await authFetch(`/api/storage/test/${id}`, {
         method: 'POST',
       });
 
@@ -219,7 +220,7 @@ export function StorageManagementSection() {
   // 测试新提供者连接
   const handleTestNewProvider = async (providerData: Omit<StorageProvider, 'connected'>): Promise<{ success: boolean; connected: boolean; message: string }> => {
     try {
-      const response = await fetch('/api/storage/providers/test', {
+      const response = await authFetch('/api/storage/providers/test', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

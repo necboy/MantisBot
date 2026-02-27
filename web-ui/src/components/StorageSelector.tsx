@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { HardDrive, Server, CheckCircle, AlertCircle, Loader2, RefreshCw } from 'lucide-react';
+import { authFetch } from '../utils/auth';
 
 interface StorageProvider {
   id: string;
@@ -33,7 +34,7 @@ export const StorageSelector: React.FC<StorageSelectorProps> = ({
   // 加载存储提供者列表
   const loadProviders = async () => {
     try {
-      const response = await fetch('/api/storage/providers');
+      const response = await authFetch('/api/storage/providers');
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
@@ -48,7 +49,7 @@ export const StorageSelector: React.FC<StorageSelectorProps> = ({
   // 加载当前存储提供者
   const loadCurrentProvider = async () => {
     try {
-      const response = await fetch('/api/storage/current');
+      const response = await authFetch('/api/storage/current');
       if (response.ok) {
         const data = await response.json();
         setCurrentProvider(data);
@@ -87,7 +88,7 @@ export const StorageSelector: React.FC<StorageSelectorProps> = ({
     setError(null);
 
     try {
-      const response = await fetch('/api/storage/switch', {
+      const response = await authFetch('/api/storage/switch', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -127,7 +128,7 @@ export const StorageSelector: React.FC<StorageSelectorProps> = ({
   // 测试连接
   const testConnection = async (providerId: string) => {
     try {
-      const response = await fetch(`/api/storage/test/${providerId}`, {
+      const response = await authFetch(`/api/storage/test/${providerId}`, {
         method: 'POST',
       });
 

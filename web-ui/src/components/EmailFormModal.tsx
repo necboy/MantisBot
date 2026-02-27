@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Wifi, CheckCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { authFetch } from '../utils/auth';
 
 // 邮件提供商预设（与后端 schema 保持一致）
 export const EMAIL_PROVIDERS: Record<string, {
@@ -164,7 +165,7 @@ export function EmailFormModal({ isOpen, onClose, account, onSave }: EmailFormMo
     setTestResult(null);
 
     try {
-      const res = await fetch('/api/email/test', {
+      const res = await authFetch('/api/email/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

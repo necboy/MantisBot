@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileItem } from './PreviewPane';
+import { authFetch } from '../utils/auth';
 
 interface FileExplorerProps {
   onFileSelect: (file: FileItem) => void;
@@ -13,7 +14,7 @@ export function FileExplorer({ onFileSelect }: FileExplorerProps) {
   const loadDirectory = async (dirPath: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/explore/list?path=${encodeURIComponent(dirPath)}`);
+      const res = await authFetch(`/api/explore/list?path=${encodeURIComponent(dirPath)}`);
       const data = await res.json();
       setItems(data.items || []);
       // 使用服务器返回的当前路径

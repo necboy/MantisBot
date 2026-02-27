@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { FileItem } from './PreviewPane';
 import { StorageSelector } from './StorageSelector';
+import { authFetch } from '../utils/auth';
 
 type ViewMode = 'icons' | 'list' | 'columns';
 type SortField = 'name' | 'size' | 'modified';
@@ -148,7 +149,7 @@ export function FileManager({
   const loadDirectory = useCallback(async (dirPath: string) => {
     setLoading(true);
     try {
-      const res = await fetch(`/api/explore/list?path=${encodeURIComponent(dirPath)}`);
+      const res = await authFetch(`/api/explore/list?path=${encodeURIComponent(dirPath)}`);
 
       // 检查是否有权限错误
       if (res.status === 403) {
@@ -274,7 +275,7 @@ export function FileManager({
           reader.onload = async () => {
             try {
               const base64 = (reader.result as string).split(',')[1];
-              const res = await fetch('/api/explore/upload', {
+              const res = await authFetch('/api/explore/upload', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -438,7 +439,7 @@ export function FileManager({
   // 复制操作
   const handleCopy = async (item: FileSystemItem) => {
     try {
-      const res = await fetch('/api/explore/copy', {
+      const res = await authFetch('/api/explore/copy', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ source: item.path })
@@ -467,7 +468,7 @@ export function FileManager({
     if (!deleteDialog.item) return;
 
     try {
-      const res = await fetch('/api/explore/delete', {
+      const res = await authFetch('/api/explore/delete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: deleteDialog.item.path })
@@ -491,7 +492,7 @@ export function FileManager({
     if (!renameDialog.item || !renameDialog.newName.trim()) return;
 
     try {
-      const res = await fetch('/api/explore/rename', {
+      const res = await authFetch('/api/explore/rename', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -521,7 +522,7 @@ export function FileManager({
     }
 
     try {
-      const res = await fetch('/api/explore/paste', {
+      const res = await authFetch('/api/explore/paste', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -548,7 +549,7 @@ export function FileManager({
     if (!name) return;
 
     try {
-      const res = await fetch('/api/explore/mkdir', {
+      const res = await authFetch('/api/explore/mkdir', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: currentPath, name })
@@ -1191,7 +1192,7 @@ function ColumnView({
     const loadItems = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/explore/list?path=${encodeURIComponent(path)}`);
+        const res = await authFetch(`/api/explore/list?path=${encodeURIComponent(path)}`);
         const data = await res.json();
         setItems(data.items || []);
       } catch (error) {

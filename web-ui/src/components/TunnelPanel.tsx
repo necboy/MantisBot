@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Wifi, RefreshCw, Check, AlertCircle, ExternalLink } from 'lucide-react';
+import { authFetch } from '../utils/auth';
 
 interface TunnelConfig {
   enabled: boolean;
@@ -63,7 +64,7 @@ export function TunnelPanel({ isOpen, onClose }: TunnelPanelProps) {
   async function loadConfig() {
     setLoading(true);
     try {
-      const res = await fetch('/api/tunnel/config');
+      const res = await authFetch('/api/tunnel/config');
       const data = await res.json();
       setConfig(data);
     } catch (err) {
@@ -75,7 +76,7 @@ export function TunnelPanel({ isOpen, onClose }: TunnelPanelProps) {
 
   async function loadStatus() {
     try {
-      const res = await fetch('/api/tunnel/status');
+      const res = await authFetch('/api/tunnel/status');
       const data = await res.json();
       setStatus(data);
     } catch (err) {
@@ -86,7 +87,7 @@ export function TunnelPanel({ isOpen, onClose }: TunnelPanelProps) {
   async function saveConfig(newConfig: TunnelConfig) {
     setSaving(true);
     try {
-      const res = await fetch('/api/tunnel/config', {
+      const res = await authFetch('/api/tunnel/config', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(newConfig)
@@ -107,7 +108,7 @@ export function TunnelPanel({ isOpen, onClose }: TunnelPanelProps) {
     setTesting(type);
     setTestResult(null);
     try {
-      const res = await fetch('/api/tunnel/test', {
+      const res = await authFetch('/api/tunnel/test', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type, config: testConfig })
@@ -124,7 +125,7 @@ export function TunnelPanel({ isOpen, onClose }: TunnelPanelProps) {
 
   async function startServices() {
     try {
-      await fetch('/api/tunnel/start', { method: 'POST' });
+      await authFetch('/api/tunnel/start', { method: 'POST' });
       await loadStatus();
     } catch (err) {
       console.error('Failed to start services:', err);
@@ -133,7 +134,7 @@ export function TunnelPanel({ isOpen, onClose }: TunnelPanelProps) {
 
   async function stopServices() {
     try {
-      await fetch('/api/tunnel/stop', { method: 'POST' });
+      await authFetch('/api/tunnel/stop', { method: 'POST' });
       await loadStatus();
     } catch (err) {
       console.error('Failed to stop services:', err);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Star, Edit2 } from 'lucide-react';
 import { ModelFormModal, MODEL_PROVIDERS } from './ModelFormModal';
+import { authFetch } from '../utils/auth';
 
 interface Model {
   name: string;
@@ -47,7 +48,7 @@ export function ModelConfigSection() {
     try {
       setLoading(true);
       setError(null);
-      const res = await fetch('/api/models');
+      const res = await authFetch('/api/models');
       if (!res.ok) throw new Error('Failed to fetch models');
       const data = await res.json();
       setModels(data.models || []);
@@ -67,7 +68,7 @@ export function ModelConfigSection() {
 
     try {
       setLoading(true);
-      const res = await fetch(`/api/models/${encodeURIComponent(modelName)}`, {
+      const res = await authFetch(`/api/models/${encodeURIComponent(modelName)}`, {
         method: 'DELETE'
       });
       if (!res.ok) throw new Error('Failed to delete model');
@@ -83,7 +84,7 @@ export function ModelConfigSection() {
   async function setDefault(modelName: string) {
     try {
       setLoading(true);
-      const res = await fetch(`/api/models/${encodeURIComponent(modelName)}/default`, {
+      const res = await authFetch(`/api/models/${encodeURIComponent(modelName)}/default`, {
         method: 'POST'
       });
       if (!res.ok) throw new Error('Failed to set default model');

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Settings, Plus, Bot, FileText, Download, Image, Trash2, ExternalLink, Clock, LayoutDashboard, Wifi, FolderOpen, Square } from 'lucide-react';
+import { MessageCircle, Settings, Plus, Bot, FileText, Download, Image, Trash2, ExternalLink, Clock, LayoutDashboard, Wifi, FolderOpen, Square, LogOut } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { CanvasPanel, FileItem, BrowserSnapshot, TerminalOutput } from './components/CanvasPanel';
@@ -12,12 +12,15 @@ import { NotificationDetail } from './components/NotificationDetail';
 import { FileReferenceTags } from './components/FileReferenceTags';  // 新增
 import { SettingsPanel } from './components/SettingsPanel';
 import { ModelConfigPrompt, useModelConfigCheck, markModelConfigPending, markModelConfigured } from './components/ModelConfigPrompt';
+import { LoginPage } from './components/LoginPage';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { SkillChainDisplay } from './components/SkillChainDisplay';
 import { CommandPalette } from './components/CommandPalette';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useTranslation } from 'react-i18next';
 import i18n from './i18n';
+import { getAuthHeaders, appendTokenToWsUrl, authFetch, clearAuthToken } from './utils/auth';
+import { generateUUID } from './utils/uuid';
 
 interface FileAttachment {
   id: string;
@@ -274,6 +277,11 @@ function App() {
   // 首次启动模型配置提示状态
   const [modelConfigPromptOpen, setModelConfigPromptOpen] = useState(false);
 
+  // 鉴权状态：authChecked=true 表示已完成检查（无论是否登录）
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [authEnabled, setAuthEnabled] = useState(false);
+  const [authChecked, setAuthChecked] = useState(false);
+
   // 当前使用的 skill（来自 plugin）- 仅用于即时显示
   const [activeSkill, setActiveSkill] = useState<{ name: string; location: string } | null>(null);
 
@@ -329,6 +337,35 @@ function App() {
     };
   }, []);
 
+  // 鉴权检查：页面加载后验证 token 是否有效
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch('/api/auth/check', { headers: getAuthHeaders() });
+        if (res.ok) {
+          const data = await res.json();
+          setIsAuthenticated(data.authenticated === true);
+          setAuthEnabled(data.authEnabled === true);
+        } else {
+          setIsAuthenticated(false);
+        }
+      } catch {
+        // 后端未就绪时跳过，稍后健康检查恢复后会重新触发
+        setIsAuthenticated(false);
+      } finally {
+        setAuthChecked(true);
+      }
+    }
+    checkAuth();
+  }, []);
+
+  // 监听 authFetch 派发的 401 事件，无需 reload 即可跳转到登录页
+  useEffect(() => {
+    const handler = () => setIsAuthenticated(false);
+    window.addEventListener('auth:unauthorized', handler);
+    return () => window.removeEventListener('auth:unauthorized', handler);
+  }, []);
+
   // 首次启动模型配置检测
   const handleModelConfigPromptRequired = useCallback(() => {
     setModelConfigPromptOpen(true);
@@ -350,7 +387,7 @@ function App() {
         return prev;
       }
       return [...prev, {
-        id: crypto.randomUUID(),
+        id: generateUUID(),
         path: item.path,
         name: item.name,
         type: item.type,
@@ -374,7 +411,7 @@ function App() {
   // 新增：更新工作目录（复用函数）
   const updateWorkDir = (newDir: string) => {
     if (newDir && newDir !== currentWorkDir) {
-      fetch('/api/workdir', {
+      authFetch('/api/workdir', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ path: newDir })
@@ -409,14 +446,14 @@ function App() {
 
   // 新增：添加允许路径并切换工作目录
   const addAllowedPath = (pathToAdd: string, targetWorkDir: string) => {
-    fetch('/api/config/allowed-paths')
+    authFetch('/api/config/allowed-paths')
       .then(res => res.json())
       .then(data => {
         const currentPaths = data.allowedPaths || [];
         const newPaths = [...currentPaths, pathToAdd];
 
         // 更新允许路径
-        fetch('/api/config/allowed-paths', {
+        authFetch('/api/config/allowed-paths', {
           method: 'PUT',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ allowedPaths: newPaths })
@@ -424,7 +461,7 @@ function App() {
           .then(res => res.json())
           .then(() => {
             // 权限添加成功，再次尝试切换工作目录
-            fetch('/api/workdir', {
+            authFetch('/api/workdir', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ path: targetWorkDir })
@@ -475,14 +512,14 @@ function App() {
 
     if (shouldAdd) {
       // 添加权限
-      fetch('/api/config/allowed-paths')
+      authFetch('/api/config/allowed-paths')
         .then(res => res.json())
         .then(data => {
           const currentPaths = data.allowedPaths || [];
           const newPaths = [...currentPaths, path];
 
           // 更新允许路径
-          fetch('/api/config/allowed-paths', {
+          authFetch('/api/config/allowed-paths', {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ allowedPaths: newPaths })
@@ -515,9 +552,10 @@ function App() {
     }
   };
 
-  // 获取用户主目录
+  // 获取用户主目录（鉴权确认后才请求）
   useEffect(() => {
-    fetch('/api/explore/home')
+    if (!isAuthenticated) return;
+    authFetch('/api/explore/home')
       .then(res => res.json())
       .then(data => {
         if (data.home) {
@@ -527,11 +565,12 @@ function App() {
       .catch(err => {
         console.error('Failed to get home directory:', err);
       });
-  }, []);
+  }, [isAuthenticated]);
 
-  // 获取当前工作目录
+  // 获取当前工作目录（鉴权确认后才请求）
   useEffect(() => {
-    fetch('/api/workdir')
+    if (!isAuthenticated) return;
+    authFetch('/api/workdir')
       .then(res => res.json())
       .then(data => {
         if (data.current) {
@@ -541,7 +580,7 @@ function App() {
       .catch(err => {
         console.error('Failed to get work directory:', err);
       });
-  }, []);
+  }, [isAuthenticated]);
 
   // 使用 ref 存储已读状态，确保 fetchNotifications 可以访问最新值
   // ��时使用 localStorage 持久化
@@ -600,7 +639,7 @@ function App() {
 
     // 1. 先调用后端 API 通知停止
     try {
-      await fetch('/api/chat/stop', {
+      await authFetch('/api/chat/stop', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId: currentSession })
@@ -652,10 +691,7 @@ function App() {
   const wsRef = useRef<{ ws: WebSocket | null; isConnected: boolean }>({ ws: null, isConnected: false });
 
   useEffect(() => {
-    // In development (port 3000), connect directly to backend (8118)
-    // In production, connect to same host
     const wsHost = window.location.host; // 使用与后端相同的 host
-    const wsUrl = `${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${wsHost}/ws`;
     let ws: WebSocket | null = null;
     let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
     let reconnectAttempts = 0;
@@ -679,6 +715,9 @@ function App() {
         console.log('[WebSocket] Already connecting, skipping...');
         return;
       }
+
+      // 每次连接都重新读取最新 token，避免 token 更新后仍用旧 URL 重连
+      const wsUrl = appendTokenToWsUrl(`${window.location.protocol === 'https:' ? 'wss:' : 'ws:'}//${wsHost}/ws`);
 
       isConnecting = true;
       console.log(`[WebSocket] Connecting to ${wsUrl} (attempt ${reconnectAttempts + 1})`);
@@ -790,7 +829,7 @@ function App() {
 
             // 创建技能调用记录
             const newSkillCall: SkillCall = {
-              id: crypto.randomUUID(),
+              id: generateUUID(),
               name: skillName,
               location,
               timestamp: timestamp || Date.now()
@@ -834,8 +873,24 @@ function App() {
       };
 
       ws.onclose = (event) => {
-        console.log(`[WebSocket] Disconnected (code: ${event.code}), reconnecting in 3s...`);
         isConnecting = false;
+        // 服务端因 token 无效主动关闭（4401）：清除失效 token，跳转到登录页
+        // 不停止重连，而是延迟重试——等用户登录后 connect() 会读取新 token
+        if (event.code === 4401) {
+          console.warn('[WebSocket] Unauthorized (4401), clearing token and waiting for re-login');
+          clearAuthToken();
+          setIsAuthenticated(false);
+          // 重置计数，保证登录后的重连不受 MAX_RECONNECT_ATTEMPTS 限制
+          reconnectAttempts = 0;
+          if (!reconnectTimeout) {
+            reconnectTimeout = setTimeout(() => {
+              reconnectTimeout = null;
+              connect();
+            }, 5000); // 给用户 5 秒登录时间
+          }
+          return;
+        }
+        console.log(`[WebSocket] Disconnected (code: ${event.code}), reconnecting in 3s...`);
         // 只有在没有待处理的连接时才重连
         if (!reconnectTimeout) {
           reconnectAttempts++;
@@ -862,15 +917,17 @@ function App() {
     };
   }, []);
 
+  // 鉴权确认后才加载配置和会话列表，避免在未登录时发出 401 请求引发循环
   useEffect(() => {
+    if (!isAuthenticated) return;
     fetchConfig();
     fetchSessions();
     fetchNotifications();
-  }, []);
+  }, [isAuthenticated]);
 
   async function fetchConfig() {
     try {
-      const res = await fetch('/api/config');
+      const res = await authFetch('/api/config');
       const data = await res.json();
       setConfig(data);
       if (data.models?.length > 0) {
@@ -885,7 +942,7 @@ function App() {
 
   async function fetchSessions() {
     try {
-      const res = await fetch('/api/sessions');
+      const res = await authFetch('/api/sessions');
       const data = await res.json();
       setSessions(data);
       if (data.length > 0 && !currentSession) {
@@ -899,7 +956,7 @@ function App() {
   // 获取通知列表
   async function fetchNotifications() {
     try {
-      const res = await fetch('/api/cron/notifications');
+      const res = await authFetch('/api/cron/notifications');
       const data = await res.json();
 
       // 合并已读状态
@@ -959,7 +1016,7 @@ function App() {
     setMessages([]);
 
     try {
-      const res = await fetch(`/api/sessions/${id}`);
+      const res = await authFetch(`/api/sessions/${id}`);
       const data = await res.json();
       setMessages(data.messages || []);
       // 切换会话时，更新审批模式为当前会话的设置
@@ -978,7 +1035,7 @@ function App() {
 
   async function createSession() {
     try {
-      const res = await fetch('/api/sessions', {
+      const res = await authFetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ model: selectedModel, approvalMode })
@@ -1000,7 +1057,7 @@ function App() {
     if (!confirm(i18n.t('confirm.deleteSession'))) return;
 
     try {
-      const res = await fetch(`/api/sessions/${id}`, { method: 'DELETE' });
+      const res = await authFetch(`/api/sessions/${id}`, { method: 'DELETE' });
       if (res.ok) {
         setSessions(prev => prev.filter(s => s.id !== id));
         if (currentSession === id) {
@@ -1111,7 +1168,7 @@ function App() {
     }
 
     try {
-      const res = await fetch('/api/permission/respond', {
+      const res = await authFetch('/api/permission/respond', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1160,9 +1217,9 @@ function App() {
       fullMessage = `[引用的文件/目录]\n${referencesInfo}\n\n${userMessage}`;
     }
 
-    // 使用 crypto.randomUUID() 生成唯一 ID
-    const userMsgId = crypto.randomUUID();
-    const assistantMsgId = crypto.randomUUID();
+    // 使用 generateUUID() 生成唯一 ID
+    const userMsgId = generateUUID();
+    const assistantMsgId = generateUUID();
 
     // Optimistic update - 添加用户消息
     setMessages(prev => [...prev, {
@@ -1185,7 +1242,7 @@ function App() {
     abortControllerRef.current = abortController;
 
     try {
-      const res = await fetch('/api/chat/stream', {
+      const res = await authFetch('/api/chat/stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -1247,7 +1304,7 @@ function App() {
               if (currentEvent === 'chunk' && parsed.content !== undefined) {
                 // 工具调用完成后的第一个 chunk，且当前气泡已有内容 → 开新气泡
                 if (hadToolAfterText && !isFirstTextChunk) {
-                  const newMsgId = crypto.randomUUID();
+                  const newMsgId = generateUUID();
                   currentAssistantMsgId = newMsgId;
                   isFirstTextChunk = true;
                   isFirstThinkingChunk = true;
@@ -1348,7 +1405,7 @@ function App() {
                   if (result.image) {  // 后端返回的是 image 字段，不是 screenshot
                     // 添加到浏览器截图列表（直接使用result中的url和title）
                     setBrowserSnapshots(prev => [...prev, {
-                      id: crypto.randomUUID(),
+                      id: generateUUID(),
                       url: result.url || 'unknown',        // 使用 result 中的 url
                       timestamp: Date.now(),
                       screenshot: result.image,             // 使用 image 字段
@@ -1390,7 +1447,7 @@ function App() {
                     const command = args?.command || args?.cmd || args?.script || args?.arg_string || 'unknown';
                     console.log('[App] Adding terminal output:', { command, args: parsed.args, outputLength: output.length, errorLength: error.length });
                     setTerminalOutputs(prev => [...prev, {
-                      id: crypto.randomUUID(),
+                      id: generateUUID(),
                       command: command,
                       output: output,
                       error: error,
@@ -1543,6 +1600,15 @@ function App() {
     }
   }
 
+  // 鉴权未通过时显示登录页
+  if (authChecked && !isAuthenticated) {
+    return (
+      <LoginPage onLogin={() => {
+        setIsAuthenticated(true);
+      }} />
+    );
+  }
+
   return (
     <ErrorBoundary>
       {/* 后端状态提示 */}
@@ -1633,7 +1699,7 @@ function App() {
           </button>
         </div>
 
-        <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0">
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex-shrink-0 flex items-center justify-between">
           <button
             onClick={() => setSettingsOpen(true)}
             className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-100"
@@ -1641,6 +1707,15 @@ function App() {
             <Settings className="w-4 h-4" />
             {t('app.settings')}
           </button>
+          {authEnabled && (
+            <button
+              onClick={() => { clearAuthToken(); setIsAuthenticated(false); }}
+              className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+              title="退出登录"
+            >
+              <LogOut className="w-4 h-4" />
+            </button>
+          )}
         </div>
       </aside>
 
@@ -2005,7 +2080,7 @@ function App() {
                 // 如果有当前会话，更新会话的审批模式
                 if (currentSession) {
                   try {
-                    await fetch(`/api/sessions/${currentSession}`, {
+                    await authFetch(`/api/sessions/${currentSession}`, {
                       method: 'PUT',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({ approvalMode: newMode })
@@ -2143,7 +2218,7 @@ function App() {
           setSettingsOpen(false);
           // 关闭设置面板时检查模型配置，标记为已配置
           try {
-            const res = await fetch('/api/models');
+            const res = await authFetch('/api/models');
             if (res.ok) {
               const data = await res.json();
               const models = data.models || [];

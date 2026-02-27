@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Check } from 'lucide-react';
+import { authFetch } from '../utils/auth';
 
 interface ProfileMeta {
   name: string;
@@ -36,7 +37,7 @@ export function ProfileManagementSection({ activeProfile, onProfileChange }: Pro
 
   async function fetchProfiles() {
     try {
-      const res = await fetch('/api/profiles');
+      const res = await authFetch('/api/profiles');
       const data = await res.json();
       setProfiles(data.profiles);
       if (!selectedProfile && data.profiles.length > 0) {
@@ -51,7 +52,7 @@ export function ProfileManagementSection({ activeProfile, onProfileChange }: Pro
     setSelectedProfile(name);
     setLoading(true);
     try {
-      const res = await fetch(`/api/profiles/${name}`);
+      const res = await authFetch(`/api/profiles/${name}`);
       const data = await res.json();
       setProfileContent(data);
     } catch (err) {
@@ -66,7 +67,7 @@ export function ProfileManagementSection({ activeProfile, onProfileChange }: Pro
 
     setLoading(true);
     try {
-      await fetch(`/api/profiles/${selectedProfile}`, {
+      await authFetch(`/api/profiles/${selectedProfile}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profileContent),
@@ -84,7 +85,7 @@ export function ProfileManagementSection({ activeProfile, onProfileChange }: Pro
 
     setLoading(true);
     try {
-      await fetch('/api/profiles', {
+      await authFetch('/api/profiles', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: newProfileName }),
@@ -105,7 +106,7 @@ export function ProfileManagementSection({ activeProfile, onProfileChange }: Pro
 
     setLoading(true);
     try {
-      await fetch(`/api/profiles/${name}`, { method: 'DELETE' });
+      await authFetch(`/api/profiles/${name}`, { method: 'DELETE' });
       if (selectedProfile === name) {
         setSelectedProfile(null);
         setProfileContent(null);
@@ -120,7 +121,7 @@ export function ProfileManagementSection({ activeProfile, onProfileChange }: Pro
 
   async function handleSetActive(name: string) {
     try {
-      await fetch('/api/profiles/active', {
+      await authFetch('/api/profiles/active', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name }),
