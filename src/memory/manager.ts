@@ -5,6 +5,7 @@ import { getEmbeddingsService, type Embedding } from './embeddings.js';
 import { loadSqliteVecExtension } from './sqlite-vec.js';
 import { HybridSearchEngine, type HybridSearchResult } from './hybrid-search-engine.js';
 import { EmbeddingCache } from './embedding-cache.js';
+import { getConfig } from '../config/loader.js';
 import type Database from 'better-sqlite3';
 
 export interface MemoryChunk {
@@ -45,6 +46,7 @@ export class MemoryManager {
     if (result.ok) {
       this.vecExtensionLoaded = true;
       console.log('[Memory] sqlite-vec extension loaded:', result.extensionPath);
+      this.initVecTable();
     } else {
       console.warn('[Memory] sqlite-vec unavailable, using JS fallback:', result.error);
     }
@@ -52,6 +54,26 @@ export class MemoryManager {
     this.hybridEngine = new HybridSearchEngine(this.db, this.vecExtensionLoaded, this.embeddings);
     this.embeddingCache = new EmbeddingCache(this.db);
     this.initialized = true;
+  }
+
+  /**
+   * 创建 sqlite-vec 虚拟表（必须在扩展加载后执行）
+   */
+  private initVecTable(): void {
+    const config = getConfig();
+    const dimension = config.memory?.vectorDimension || 1536;
+    try {
+      this.db.exec(`
+        CREATE VIRTUAL TABLE IF NOT EXISTS chunks_vec_search USING vec0(
+          id TEXT PRIMARY KEY,
+          embedding float[${dimension}]
+        )
+      `);
+      console.log('[Memory] chunks_vec_search virtual table ready, dimension:', dimension);
+    } catch (error) {
+      console.error('[Memory] Failed to create chunks_vec_search table:', error);
+      this.vecExtensionLoaded = false;
+    }
   }
 
   /**
