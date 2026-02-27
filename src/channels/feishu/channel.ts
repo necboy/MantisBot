@@ -2,7 +2,7 @@
 
 import { v4 as uuidv4 } from 'uuid';
 import type { IChannel, FileAttachment, ChannelMessage } from '../channel.interface.js';
-import { startFeishuWSClient, sendFeishuMessage, sendFeishuFile, stopFeishuWSClient, isFeishuEnabled } from './client.js';
+import { startFeishuWSClient, sendFeishuMessage, replyFeishuMessage, sendFeishuFile, stopFeishuWSClient, isFeishuEnabled } from './client.js';
 
 export interface FeishuChannelOptions {
   onMessage: (message: ChannelMessage) => Promise<void>;
@@ -14,6 +14,8 @@ export class FeishuChannel implements IChannel {
   enabled = false;
 
   private onMessage: FeishuChannelOptions['onMessage'];
+  // 记录每个群聊最后一条触发消息的 ID，用于回复引用
+  private lastGroupMessageId = new Map<string, string>();
 
   constructor(options: FeishuChannelOptions) {
     this.onMessage = options.onMessage;
@@ -28,7 +30,10 @@ export class FeishuChannel implements IChannel {
       return;
     }
 
-    await startFeishuWSClient(async (message, chatId, userId) => {
+    await startFeishuWSClient(async (message, chatId, userId, messageId) => {
+      // 群聊时记录原消息 ID，回复时用于引用
+      this.lastGroupMessageId.set(chatId, messageId);
+
       const channelMessage: ChannelMessage = {
         id: uuidv4(),
         content: message,
@@ -56,8 +61,16 @@ export class FeishuChannel implements IChannel {
   ): Promise<void> {
     // 先发送文字消息
     if (message && message.trim()) {
-      await sendFeishuMessage(chatId, message);
-      console.log(`[FeishuChannel] Message sent to ${chatId}`);
+      const replyToId = this.lastGroupMessageId.get(chatId);
+      if (replyToId) {
+        // 群聊：引用原消息回复
+        this.lastGroupMessageId.delete(chatId);
+        await replyFeishuMessage(replyToId, message);
+        console.log(`[FeishuChannel] Reply sent to ${chatId} (replyTo: ${replyToId})`);
+      } else {
+        await sendFeishuMessage(chatId, message);
+        console.log(`[FeishuChannel] Message sent to ${chatId}`);
+      }
     }
 
     // 再逐个发送附件

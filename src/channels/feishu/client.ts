@@ -23,6 +23,8 @@ delete process.env.all_proxy;
 let client: any = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let wsClient: any = null;
+// Bot 自身的 open_id，用于判断群聊中是否被 @到
+let botOpenId: string | undefined;
 
 // 消息去重缓存（参考 LobsterAI 实现）
 const processedMessages = new Map<string, number>();
@@ -88,8 +90,8 @@ async function probeBot(): Promise<{ ok: boolean; error?: string; botName?: stri
 
     return {
       ok: true,
-      botName: response.data?.app_name ?? response.data?.bot?.app_name,
-      botOpenId: response.data?.open_id ?? response.data?.bot?.open_id,
+      botName: response.bot?.app_name ?? response.data?.app_name ?? response.data?.bot?.app_name,
+      botOpenId: response.bot?.open_id ?? response.data?.open_id ?? response.data?.bot?.open_id,
     };
   } catch (err: any) {
     console.error('[Feishu] Bot probe failed:', err.message);
@@ -143,7 +145,7 @@ export function isFeishuEnabled(): boolean {
  * 参考 LobsterAI 实现，增加预检测和域名配置
  */
 export async function startFeishuWSClient(
-  onMessage: (message: string, chatId: string, userId: string) => Promise<void>
+  onMessage: (message: string, chatId: string, userId: string, messageId: string) => Promise<void>
 ): Promise<void> {
   const config = getConfig();
   // 从新架构的 config.channels.feishu 读取配置
@@ -186,6 +188,7 @@ export async function startFeishuWSClient(
     return;
   }
   console.log(`[Feishu] Bot verified: ${probeResult.botName} (${probeResult.botOpenId})`);
+  botOpenId = probeResult.botOpenId;
 
   // 创建 WSClient 用于长连接
   console.log('[Feishu] Creating WebSocket client, domain:', feishuConfig.domain || 'feishu');
@@ -212,23 +215,42 @@ export async function startFeishuWSClient(
         }
 
         console.log('[Feishu] Full message data:', JSON.stringify(data, null, 2));
+
+        // 群聊消息：只处理 Bot 本身被 @到的消息，忽略普通群消息
+        const isGroupChat = message.chat_type === 'group';
+        if (isGroupChat) {
+          const mentions: any[] = Array.isArray(message.mentions) ? message.mentions : [];
+          const isBotMentioned = mentions.some(
+            (m: any) =>
+              m.id?.open_id === botOpenId ||
+              m.id?.union_id === botOpenId ||
+              m.id?.user_id === botOpenId
+          );
+          if (!isBotMentioned) {
+            console.log(`[Feishu] Group message without @bot ignored: ${messageId}`);
+            return;
+          }
+        }
+
         const chatId = message.chat_id;
         // sender_id 结构可能因应用类型不同而有差异
         const userId = message.sender_id?.user_id || message.sender_id?.union_id || '';
 
-        // 解析消息内容
+        // 解析消息内容，并清除 @_user_X 占位符
         let content = '';
         try {
           content = JSON.parse(message.content || '{}').text || '';
         } catch {
           content = message.content || '';
         }
+        // 移除飞书 @占位符（如 "@_user_1 "），保留实际文字
+        content = content.replace(/@_user_\d+\s*/g, '').trim();
 
         console.log(`[Feishu] Received message from ${userId}, chatId: ${chatId}, messageId: ${messageId}, content: ${content}`);
 
         // 调用传入的回调函数处理消息
         if (onMessage) {
-          await onMessage(content, chatId, userId);
+          await onMessage(content, chatId, userId, messageId);
         }
       },
       // 添加消息已读事件处理器，消除警告
@@ -269,6 +291,31 @@ function buildMarkdownCard(content: string, title?: string): string {
   }
 
   return JSON.stringify(card);
+}
+
+/**
+ * 回复指定消息（引用原消息，适用于群聊 @Bot 场景）
+ * @param replyToMessageId 被回复的原始消息 ID
+ * @param content 回复内容（支持 Markdown 格式）
+ * @param title 可选的卡片标题
+ */
+export async function replyFeishuMessage(
+  replyToMessageId: string,
+  content: string,
+  title?: string
+): Promise<void> {
+  const feishu = getFeishuClient();
+  if (!feishu) {
+    throw new Error('Feishu is not enabled');
+  }
+
+  await feishu.im.v1.message.reply({
+    path: { message_id: replyToMessageId },
+    data: {
+      content: buildMarkdownCard(content, title),
+      msg_type: 'interactive',
+    },
+  });
 }
 
 /**
