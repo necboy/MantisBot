@@ -19,7 +19,7 @@ import { CommandPalette } from './components/CommandPalette';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { useTranslation } from 'react-i18next';
 import i18n from './i18n';
-import { getAuthHeaders, appendTokenToWsUrl, appendTokenToUrl, authFetch, clearAuthToken } from './utils/auth';
+import { appendTokenToWsUrl, appendTokenToUrl, authFetch, clearAuthToken } from './utils/auth';
 import { generateUUID } from './utils/uuid';
 
 interface FileAttachment {
