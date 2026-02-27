@@ -14,18 +14,14 @@ export function OfficePreview({ filePath, type, fileApiUrl, officePreviewServer 
 
   // 计算文件 URL（用于 OnlyOffice iframe 预览）
   const fileUrl = useMemo(() => {
-    if (fileApiUrl) {
-      // fileApiUrl 是相对路径 /api/files/xxx.docx，需要转换为完整 URL
-      const backendPort = '8118';
-      const isDev = window.location.port === '3081';
-      const baseUrl = isDev ? `http://localhost:${backendPort}` : window.location.origin;
-      // 使用 fileApiUrl 或转换为 binary 端点
-      return `${baseUrl}${fileApiUrl}`;
-    }
-    // 使用 binary 端点
     const backendPort = '8118';
     const isDev = window.location.port === '3081';
     const baseUrl = isDev ? `http://localhost:${backendPort}` : window.location.origin;
+    if (fileApiUrl) {
+      // fileApiUrl 是相对路径 /api/files/xxx.docx，转换为完整 URL 并追加 token
+      // onlyoffice 在浏览器端 fetch，/api/* 受鉴权中间件保护，必须携带 token
+      return appendTokenToUrl(`${baseUrl}${fileApiUrl}`);
+    }
     return appendTokenToUrl(`${baseUrl}/api/explore/binary?path=${encodeURIComponent(filePath)}`);
   }, [filePath, fileApiUrl]);
 
