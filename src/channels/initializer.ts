@@ -17,6 +17,7 @@ import type { SkillsLoader } from '../agents/skills/loader.js';
 import type { PluginLoader } from '../plugins/loader.js';
 import type { GlobalErrorHandler } from '../reliability/global-error-handler.js';
 import type { ChannelMessage } from './channel.interface.js';
+import type { MemoryManager } from '../memory/manager.js';
 
 // 存储初始化依赖，用于后续热加载
 interface ChannelDependencies {
@@ -25,6 +26,7 @@ interface ChannelDependencies {
   skillsLoader: SkillsLoader;
   pluginLoader: PluginLoader | undefined;
   onMessage: (message: ChannelMessage) => Promise<void>;
+  memoryManager?: MemoryManager;
   cronService?: CronService;
   tunnelManager?: TunnelManager;
   errorHandler?: GlobalErrorHandler;
@@ -38,6 +40,7 @@ export async function initializeChannels(
   skillsLoader: SkillsLoader,
   pluginLoader: PluginLoader | undefined,
   onMessage: (message: ChannelMessage) => Promise<void>,
+  memoryManager?: MemoryManager,
   cronService?: CronService,
   tunnelManager?: TunnelManager,
   errorHandler?: GlobalErrorHandler
@@ -49,6 +52,7 @@ export async function initializeChannels(
     skillsLoader,
     pluginLoader,
     onMessage,
+    memoryManager,
     cronService,
     tunnelManager,
     errorHandler
@@ -65,6 +69,7 @@ export async function initializeChannels(
       skillsLoader,
       pluginLoader,
       onMessage,
+      memoryManager,
       cronService,
       tunnelManager,
       errorHandler

@@ -13,6 +13,7 @@ import type { TunnelManager } from '../../tunnel/index.js';
 import type { SkillsLoader } from '../../agents/skills/loader.js';
 import type { PluginLoader } from '../../plugins/loader.js';
 import type { GlobalErrorHandler } from '../../reliability/global-error-handler.js';
+import type { MemoryManager } from '../../memory/manager.js';
 
 export class HTTPWSChannel implements IChannel {
   name = 'http-ws';
@@ -25,6 +26,7 @@ export class HTTPWSChannel implements IChannel {
   private skillsLoader: SkillsLoader;
   private pluginLoader?: PluginLoader;
   private onMessage: (message: any) => Promise<void>;
+  private memoryManager?: MemoryManager;
   private cronService?: CronService;
   private tunnelManager?: TunnelManager;
   private errorHandler?: GlobalErrorHandler;
@@ -35,6 +37,7 @@ export class HTTPWSChannel implements IChannel {
     skillsLoader: SkillsLoader,
     pluginLoader: PluginLoader | undefined,
     onMessage: (message: any) => Promise<void>,
+    memoryManager?: MemoryManager,
     cronService?: CronService,
     tunnelManager?: TunnelManager,
     errorHandler?: GlobalErrorHandler
@@ -44,6 +47,7 @@ export class HTTPWSChannel implements IChannel {
     this.skillsLoader = skillsLoader;
     this.pluginLoader = pluginLoader;
     this.onMessage = onMessage;
+    this.memoryManager = memoryManager;
     this.cronService = cronService;
     this.tunnelManager = tunnelManager;
     this.errorHandler = errorHandler;
@@ -58,6 +62,7 @@ export class HTTPWSChannel implements IChannel {
       skillsLoader: this.skillsLoader,
       pluginLoader: this.pluginLoader,
       onMessage: this.onMessage,
+      memoryManager: this.memoryManager,
       cronService: this.cronService,
       tunnelManager: this.tunnelManager
     });

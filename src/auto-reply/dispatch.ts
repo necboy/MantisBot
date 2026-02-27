@@ -71,9 +71,8 @@ export class MessageDispatcher {
       // 跨 session 搜索，支持长期记忆
       console.log('[Dispatch] Searching memories for:', content.substring(0, 50));
       const memories = await this.memoryManager.searchHybrid('default', content, {
-        limit: 3,
-        sessionKey: undefined,  // 不限制 session，支持跨 session 记忆
-        useHybrid: true
+        limit: 7,
+        sessionKey: undefined  // 不限制 session，支持跨 session 记忆
       });
       console.log(`[Dispatch] Found ${memories.length} memories:`,
         memories.map(m => m.content.substring(0, 30)));

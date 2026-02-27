@@ -241,6 +241,7 @@ export async function main(): Promise<void> {
         }
       }
     },
+    memoryManager,
     cronService,
     tunnelManager,
     globalErrorHandler

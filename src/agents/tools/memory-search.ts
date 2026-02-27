@@ -49,8 +49,7 @@ export const memorySearchTool: Tool = {
 
       const results = await manager.searchHybrid(agentId, query, {
         limit: Number(limit),
-        minScore: Number(minScore),
-        useHybrid: true
+        minScore: Number(minScore)
       });
 
       // 格式化结果
@@ -58,7 +57,8 @@ export const memorySearchTool: Tool = {
         content: r.content,
         score: r.score?.toFixed(3),
         timestamp: new Date(r.createdAt).toISOString(),
-        sessionKey: r.sessionKey
+        sessionKey: r.sessionKey,
+        snippet: r.snippet
       }));
 
       return {

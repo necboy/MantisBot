@@ -374,6 +374,8 @@ export const ConfigSchema = z.object({
   memory: z.object({
     enabled: z.boolean().default(true),
     vectorDimension: z.number().default(1536),
+    /** 用于生成 embedding 的模型名称（对应 models 列表中的 name），不填则仅使用全文搜索 */
+    embeddingModel: z.string().optional(),
   }).optional(),
   // 会话和上下文窗口配置
   session: z.object({

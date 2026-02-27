@@ -13,6 +13,8 @@ import type { Message } from '../../types.js';
 // AgentRunner 已移除，统一使用 ClaudeAgentRunner
 import { getFileStorage } from '../../files/index.js';
 import { getLLMClient, clearLLMClientCache } from '../../agents/llm-client.js';
+import { resetEmbeddingsService } from '../../memory/embeddings.js';
+import type { MemoryManager } from '../../memory/manager.js';
 import exploreRouter from './explore-api.js';
 import storageRouter from './storage-api.js';
 import { createCronRoutes } from './cron-routes.js';
@@ -115,6 +117,7 @@ export interface HTTPServerOptions {
   skillsLoader: SkillsLoader;
   pluginLoader?: PluginLoader;
   onMessage: (message: any) => Promise<void>;
+  memoryManager?: MemoryManager;
   cronService?: CronService;
   tunnelManager?: TunnelManager;
 }
@@ -538,8 +541,26 @@ export async function createHTTPServer(options: HTTPServerOptions) {
       let fullContent = '';
       const attachments: any[] = [];
 
+      // 记忆检索：在 streamRun 前搜索相关记忆，构建上下文提示词
+      let contextualMessage = message;
+      if (options.memoryManager) {
+        try {
+          const memories = await options.memoryManager.searchHybrid('default', message, {
+            limit: 7,
+            sessionKey: undefined  // 跨 session 搜索
+          });
+          console.log(`[HTTPServer] Memory search found ${memories.length} memories for stream`);
+          if (memories.length > 0) {
+            const memoryContext = memories.map((m, i) => `${i + 1}. ${m.content}`).join('\n');
+            contextualMessage = `📋 **相关记忆**（请在回答前先参考这些信息）：\n${memoryContext}\n\n---\n\n💬 **用户问题**：\n${message}\n\n💡 **提示**：请先查看上面的相关记忆，然后回答用户问题。如果记忆中有相关信息，请直接使用。`;
+          }
+        } catch (err) {
+          console.error('[HTTPServer] Memory search failed (stream):', err);
+        }
+      }
+
       // Stream process
-      for await (const chunk of agentRunner.streamRun(message, history)) {
+      for await (const chunk of agentRunner.streamRun(contextualMessage, history)) {
         const chunkAny = chunk as any;
 
         // 思考过程事件 - 流式输出思考内容
@@ -608,6 +629,24 @@ export async function createHTTPServer(options: HTTPServerOptions) {
           }
 
           options.sessionManager.updateSession(session);
+
+          // 后台异步存储记忆（不阻塞响应）
+          if (options.memoryManager) {
+            options.memoryManager.add({
+              agentId: 'default',
+              sessionKey: chatId,
+              content: `用户: ${message}`,
+              source: 'user',
+              createdAt: Date.now(),
+            }).catch(err => console.error('[HTTPServer] 记忆存储失败 (用户消息):', err));
+            options.memoryManager.add({
+              agentId: 'default',
+              sessionKey: chatId,
+              content: `助手: ${fullContent}`,
+              source: 'assistant',
+              createdAt: Date.now(),
+            }).catch(err => console.error('[HTTPServer] 记忆存储失败 (助手消息):', err));
+          }
 
           // ⚡ 发送 done 事件（标题已在用户提交消息时提前生成）
           const doneData = {
@@ -868,6 +907,7 @@ export async function createHTTPServer(options: HTTPServerOptions) {
       config.models.push(newModel);
       await saveConfig(config);
       clearLLMClientCache(); // 清理客户端缓存，实现热加载
+      resetEmbeddingsService(); // 同步重置 embedding 服务（配置可能变更）
 
       res.json({ success: true, model: newModel });
     } catch (error) {
@@ -890,6 +930,7 @@ export async function createHTTPServer(options: HTTPServerOptions) {
       config.defaultModel = name;
       await saveConfig(config);
       clearLLMClientCache(); // 清理客户端缓存，实现热加载
+      resetEmbeddingsService(); // 同步重置 embedding 服务（配置可能变更）
 
       res.json({ success: true, defaultModel: name });
     } catch (error) {
@@ -952,6 +993,7 @@ export async function createHTTPServer(options: HTTPServerOptions) {
 
       await saveConfig(config);
       clearLLMClientCache(); // 清理客户端缓存，实现热加载
+      resetEmbeddingsService(); // 同步重置 embedding 服务（配置可能变更）
 
       res.json({ success: true, model: config.models[modelIndex] });
     } catch (error) {
@@ -988,6 +1030,7 @@ export async function createHTTPServer(options: HTTPServerOptions) {
 
       await saveConfig(config);
       clearLLMClientCache(); // 清理客户端缓存，实现热加载
+      resetEmbeddingsService(); // 同步重置 embedding 服务（配置可能变更）
 
       res.json({ success: true });
     } catch (error) {
