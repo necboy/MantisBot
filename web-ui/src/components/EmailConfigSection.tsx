@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Star, Edit2, Mail, CheckCircle, XCircle, Wifi } from 'lucide-react';
+import { Plus, Trash2, Star, Edit2, Mail, CheckCircle, XCircle, Wifi, ToggleLeft, ToggleRight } from 'lucide-react';
 import { EmailFormModal, EMAIL_PROVIDERS } from './EmailFormModal';
 
 interface EmailAccount {
@@ -255,6 +255,22 @@ export function EmailConfigSection() {
                   </div>
 
                   <div className="flex items-center gap-2">
+                    {/* 启用/禁用开关 */}
+                    <button
+                      onClick={() => toggleEnabled(account.id, !account.enabled)}
+                      className={`p-2 transition-colors ${
+                        account.enabled
+                          ? 'text-green-600 hover:text-gray-500 dark:text-green-400 dark:hover:text-gray-400'
+                          : 'text-gray-400 hover:text-green-600 dark:text-gray-600 dark:hover:text-green-400'
+                      }`}
+                      title={account.enabled ? '点击禁用' : '点击启用'}
+                    >
+                      {account.enabled
+                        ? <ToggleRight className="w-5 h-5" />
+                        : <ToggleLeft className="w-5 h-5" />
+                      }
+                    </button>
+
                     {/* 测试按钮 */}
                     <button
                       onClick={() => testAccount(account)}
