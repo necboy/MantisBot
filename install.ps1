@@ -28,7 +28,8 @@ $ErrorActionPreference = "Stop"
 
 # Config / 配置
 $REPO_URL       = "https://github.com/necboy/MantisBot.git"
-$MIN_NODE_MAJOR = 18
+$MIN_NODE_MAJOR = 22
+$MIN_NODE_MINOR = 22
 $BACKEND_PORT   = 8118
 $FRONTEND_PORT  = 3000
 $script:ProjectDir = ""
@@ -82,6 +83,16 @@ function Get-NodeMajor {
     catch { return 0 }
 }
 
+function Get-NodeMinor {
+    try {
+        $verRaw = & node --version 2>$null
+        if (-not $verRaw) { return 0 }
+        $clean = ($verRaw -replace 'v', '').Split('.')[1]
+        return [int]$clean
+    }
+    catch { return 0 }
+}
+
 # ------------------------------------------------------------
 # STEP 0: Fix execution policy if needed
 # 修复 PowerShell 执行策略
@@ -113,12 +124,13 @@ function Check-Prerequisites {
 
     # Node.js
     if (Test-Cmd "node") {
-        $ver = Get-NodeMajor
-        if ($ver -ge $MIN_NODE_MAJOR) {
+        $ver   = Get-NodeMajor
+        $minor = Get-NodeMinor
+        if ($ver -gt $MIN_NODE_MAJOR -or ($ver -eq $MIN_NODE_MAJOR -and $minor -ge $MIN_NODE_MINOR)) {
             Write-Ok "Node.js $(node --version)"
         }
         else {
-            Write-Err "Node.js version too low (current: v$ver, required: v$MIN_NODE_MAJOR+)"
+            Write-Err "Node.js version too low (current: v$ver.$minor, required: v$MIN_NODE_MAJOR.$MIN_NODE_MINOR+)"
             $missing += "nodejs"
         }
     }

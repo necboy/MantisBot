@@ -20,7 +20,7 @@ Supports multiple communication channels and LLM models, with 40+ built-in pract
 支持多种通信渠道和 LLM 模型，内置 40+ 实用技能（包括集成PDF+Office三件套技能），集成 OnlyOffice 实现在线 Office 文件编辑，同时可以将安装的个人电脑作为远程存储 NAS 进行使用，构建个人及工作的 AI 知识库
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Node](https://img.shields.io/badge/node-%3E%3D18.0.0-green.svg)](https://nodejs.org/)
+[![Node](https://img.shields.io/badge/node-%3E%3D22.22.0-green.svg)](https://nodejs.org/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.3-blue.svg)](https://www.typescriptlang.org/)
 
 [English](#english) | [中文文档](#中文文档)
@@ -69,71 +69,71 @@ MantisBot's 40+ skills cover various aspects of work and life:
 
 #### 📄 Document Processing & Office Automation
 
-| Scenario | Skill |
-|----------|-------|
-| Read/analyze PDF, extract text/tables | `pdf` - Read, OCR, extract, merge |
-| Create research report PPT, market analysis | `pptx` + `deep-research` - Deep research + PPT |
-| Create product demos, company profiles | `pptx` + `docx` - Doc organization + PPT |
-| Create data analysis reports, charts | `xlsx` + `pptx` - Excel analysis + PPT charts |
-| Handle Word documents, contracts | `docx` - Word document operations |
-| Excel data processing, statistics | `xlsx` - Excel operations & data processing |
-| Write internal communications, weekly/monthly reports | `internal-comms` - Internal communications |
-| Batch process multiple PDFs | `pdf` - Batch merge, split, extract |
-| Convert PDF to editable documents | `pdf` + `docx` - OCR + Word conversion |
-| **Online Edit Word/Excel/PPT** | **OnlyOffice Integration** - Edit Office files directly in browser, multi-user collaboration |
+| Scenario                                              | Skill                                                                                              |
+| ----------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
+| Read/analyze PDF, extract text/tables                 | `pdf` - Read, OCR, extract, merge                                                                |
+| Create research report PPT, market analysis           | `pptx` + `deep-research` - Deep research + PPT                                                 |
+| Create product demos, company profiles                | `pptx` + `docx` - Doc organization + PPT                                                       |
+| Create data analysis reports, charts                  | `xlsx` + `pptx` - Excel analysis + PPT charts                                                  |
+| Handle Word documents, contracts                      | `docx` - Word document operations                                                                |
+| Excel data processing, statistics                     | `xlsx` - Excel operations & data processing                                                      |
+| Write internal communications, weekly/monthly reports | `internal-comms` - Internal communications                                                       |
+| Batch process multiple PDFs                           | `pdf` - Batch merge, split, extract                                                              |
+| Convert PDF to editable documents                     | `pdf` + `docx` - OCR + Word conversion                                                         |
+| **Online Edit Word/Excel/PPT**                  | **OnlyOffice Integration** - Edit Office files directly in browser, multi-user collaboration |
 
 #### 🧠 Research & Analysis
 
-| Scenario | Skill |
-|----------|-------|
+| Scenario                                | Skill                                         |
+| --------------------------------------- | --------------------------------------------- |
 | Deep industry research with 10+ sources | `deep-research` - Enterprise-grade research |
-| Brainstorming & ideation | `brainstorming` - Creative brainstorming |
-| Brand guidelines creation | `brand-guidelines` - Brand guide creation |
+| Brainstorming & ideation                | `brainstorming` - Creative brainstorming    |
+| Brand guidelines creation               | `brand-guidelines` - Brand guide creation   |
 
 #### 💻 Development & Tech Work
 
-| Scenario | Skill |
-|----------|-------|
-| Frontend development | `frontend-design` - High-quality UI development |
-| Web app testing | `webapp-testing` - Automated testing |
-| GitHub repository management | `github` - GitHub operations |
-| Build Claude Code automation | `coding-agent` - Coding Agent development |
+| Scenario                     | Skill                                             |
+| ---------------------------- | ------------------------------------------------- |
+| Frontend development         | `frontend-design` - High-quality UI development |
+| Web app testing              | `webapp-testing` - Automated testing            |
+| GitHub repository management | `github` - GitHub operations                    |
+| Build Claude Code automation | `coding-agent` - Coding Agent development       |
 
 #### 🎨 Creative & Design
 
-| Scenario | Skill |
-|----------|-------|
+| Scenario                              | Skill                                     |
+| ------------------------------------- | ----------------------------------------- |
 | Create beautiful web pages/components | `web-artifacts-builder` - Web Artifacts |
-| Generate algorithmic art | `algorithmic-art` - Algorithmic art |
-| Image/poster design | `canvas-design` - Canvas design |
-| Brand visual design | `theme-factory` - Theme factory |
+| Generate algorithmic art              | `algorithmic-art` - Algorithmic art     |
+| Image/poster design                   | `canvas-design` - Canvas design         |
+| Brand visual design                   | `theme-factory` - Theme factory         |
 
 #### 📱 Apple Ecosystem Integration
 
-| Scenario | Skill |
-|----------|-------|
-| Manage Apple Notes | `apple-notes` - Notes management |
-| Sync Apple Reminders | `apple-reminders` - Reminders |
+| Scenario                | Skill                                   |
+| ----------------------- | --------------------------------------- |
+| Manage Apple Notes      | `apple-notes` - Notes management      |
+| Sync Apple Reminders    | `apple-reminders` - Reminders         |
 | Manage Things Mac tasks | `things-mac` - Things task management |
-| Send iMessage | `imsg` - iMessage sending |
+| Send iMessage           | `imsg` - iMessage sending             |
 
 #### 🔧 Tools & Productivity
 
-| Scenario | Skill |
-|----------|-------|
-| Speech-to-text (offline) | `openai-whisper` - Local Whisper |
-| Speech-to-text (API) | `openai-whisper-api` - API transcription |
-| AI image generation | `openai-image-gen` - DALL-E image generation |
-| GIF search | `gifgrep` - GIF search tool |
-| Weather query | `weather` - Weather information |
+| Scenario                 | Skill                                          |
+| ------------------------ | ---------------------------------------------- |
+| Speech-to-text (offline) | `openai-whisper` - Local Whisper             |
+| Speech-to-text (API)     | `openai-whisper-api` - API transcription     |
+| AI image generation      | `openai-image-gen` - DALL-E image generation |
+| GIF search               | `gifgrep` - GIF search tool                  |
+| Weather query            | `weather` - Weather information              |
 
 #### 🔌 Extensions & Integration
 
-| Scenario | Skill |
-|----------|-------|
-| Build custom MCP servers | `mcp-builder` - MCP server development |
-| Install/publish skills | `skill-creator` / `clawhub` - Skill creation |
-| Send emails | `email` / `feishu-mail` - Email management |
+| Scenario                 | Skill                                            |
+| ------------------------ | ------------------------------------------------ |
+| Build custom MCP servers | `mcp-builder` - MCP server development         |
+| Install/publish skills   | `skill-creator` / `clawhub` - Skill creation |
+| Send emails              | `email` / `feishu-mail` - Email management   |
 
 ### 📊 Comparison with OpenClaw
 
@@ -159,11 +159,11 @@ MantisBot's 40+ skills cover various aspects of work and life:
 
 #### Prerequisites
 
-| Dependency | Minimum | Notes |
-|------------|---------|-------|
-| Node.js | **18.11+** | 22.x recommended (`--watch` requires 18.11+) |
-| npm | 8+ | Bundled with Node.js |
-| git | any | Required for cloning |
+| Dependency | Minimum          | Notes                                          |
+| ---------- | ---------------- | ---------------------------------------------- |
+| Node.js    | **22.22+** | 22.x LTS recommended                                        |
+| npm        | 8+               | Bundled with Node.js                           |
+| git        | any              | Required for cloning                           |
 
 #### ⚡ Intelligent Installer (Recommended)
 
@@ -195,6 +195,7 @@ irm https://raw.githubusercontent.com/necboy/MantisBot/main/install.ps1 | iex
 ```
 
 > **Windows execution policy:** The one-liner (`irm | iex`) bypasses execution policy by design. For local execution, if PowerShell blocks the script, the installer will fix this automatically. If it can't, run once manually:
+>
 > ```powershell
 > Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 > ```
@@ -221,6 +222,7 @@ npm install
 > This project uses `zod@^4.x` (required by `@anthropic-ai/claude-agent-sdk`), while `openai@4.x/5.x` declares an optional peer dependency on `zod@^3.x`. npm v7+ treats this as an error by default.
 >
 > A `.npmrc` file with `legacy-peer-deps=true` is already included in the repository, so this is handled automatically. If you still see an `ERESOLVE` error, run:
+>
 > ```bash
 > npm install --legacy-peer-deps
 > ```
@@ -279,17 +281,17 @@ This compiles the TypeScript backend and Vite frontend, then runs both in produc
 
 #### Available npm Scripts
 
-| Command | Description |
-|---------|-------------|
-| `npm run dev` | Start both backend + frontend (watch mode, merged logs) |
-| `npm run dev:backend` | Start backend only (watch mode) |
-| `npm run build` | Compile backend TypeScript → `dist/` |
-| `npm run build:ui` | Build frontend → `web-ui/dist/` |
-| `npm run build:all` | Compile backend + build frontend |
-| `npm run start` | Build everything then run in production mode |
-| `npm run test` | Run unit tests (watch mode) |
-| `npm run test:run` | Run unit tests (single pass) |
-| `npm run test:coverage` | Run tests with coverage report |
+| Command                   | Description                                             |
+| ------------------------- | ------------------------------------------------------- |
+| `npm run dev`           | Start both backend + frontend (watch mode, merged logs) |
+| `npm run dev:backend`   | Start backend only (watch mode)                         |
+| `npm run build`         | Compile backend TypeScript →`dist/`                  |
+| `npm run build:ui`      | Build frontend →`web-ui/dist/`                       |
+| `npm run build:all`     | Compile backend + build frontend                        |
+| `npm run start`         | Build everything then run in production mode            |
+| `npm run test`          | Run unit tests (watch mode)                             |
+| `npm run test:run`      | Run unit tests (single pass)                            |
+| `npm run test:coverage` | Run tests with coverage report                          |
 
 > **Port reference:** Backend API runs on `:8118`, Vite dev server on `:3000`. The dev server proxies `/api`, `/ws`, `/health`, and `/office-preview` to the backend.
 
@@ -409,71 +411,71 @@ MantisBot 的 40+ 技能可以覆盖工作和生活的方方面面，以下是�
 
 #### 📄 文档处理与办公自动化
 
-| 场景 | 使用技能 |
-|------|----------|
-| 阅读/分析 PDF 文档，提取文本和表格 | `pdf` - PDF 读取、OCR、提取、合并 |
-| 制作调研报告 PPT、市场分析演示 | `pptx` + `deep-research` - 深度研究 + PPT 制作 |
-| 制作产品介绍、公司简介演示 | `pptx` + `docx` - 文档整理 + PPT 制作 |
-| 制作数据分析报告、图表展示 | `xlsx` + `pptx` - Excel 分析 + PPT 图表 |
-| 处理 Word 文档、合同协议 | `docx` - Word 文档操作 |
-| 处理 Excel 表格、数据统计 | `xlsx` - Excel 操作与数据处理 |
-| 撰写公司内部通讯、周报月报 | `internal-comms` - 内部通讯撰写 |
-| 批量处理多个 PDF 文档 | `pdf` - 批量合并、拆分、提取 |
-| 将 PDF 转为可编辑文档 | `pdf` + `docx` - OCR 识别 + Word 转换 |
-| **在线编辑 Word/Excel/PPT** | **OnlyOffice 集成** - 浏览器内直接编辑 Office 文件，多人协作 |
+| 场景                               | 使用技能                                                           |
+| ---------------------------------- | ------------------------------------------------------------------ |
+| 阅读/分析 PDF 文档，提取文本和表格 | `pdf` - PDF 读取、OCR、提取、合并                                |
+| 制作调研报告 PPT、市场分析演示     | `pptx` + `deep-research` - 深度研究 + PPT 制作                 |
+| 制作产品介绍、公司简介演示         | `pptx` + `docx` - 文档整理 + PPT 制作                          |
+| 制作数据分析报告、图表展示         | `xlsx` + `pptx` - Excel 分析 + PPT 图表                        |
+| 处理 Word 文档、合同协议           | `docx` - Word 文档操作                                           |
+| 处理 Excel 表格、数据统计          | `xlsx` - Excel 操作与数据处理                                    |
+| 撰写公司内部通讯、周报月报         | `internal-comms` - 内部通讯撰写                                  |
+| 批量处理多个 PDF 文档              | `pdf` - 批量合并、拆分、提取                                     |
+| 将 PDF 转为可编辑文档              | `pdf` + `docx` - OCR 识别 + Word 转换                          |
+| **在线编辑 Word/Excel/PPT**  | **OnlyOffice 集成** - 浏览器内直接编辑 Office 文件，多人协作 |
 
 #### 🧠 智能研究与分析
 
-| 场景 | 使用技能 |
-|------|----------|
-| 深度行业研究，10+ 来源综合分析 | `deep-research` - 企业级深度研究 |
-| 头脑风暴，创意激发 | `brainstorming` - 创意激发与头脑风暴 |
-| 品牌设计指南制定 | `brand-guidelines` - 品牌指南创建 |
+| 场景                           | 使用技能                               |
+| ------------------------------ | -------------------------------------- |
+| 深度行业研究，10+ 来源综合分析 | `deep-research` - 企业级深度研究     |
+| 头脑风暴，创意激发             | `brainstorming` - 创意激发与头脑风暴 |
+| 品牌设计指南制定               | `brand-guidelines` - 品牌指南创建    |
 
 #### 💻 开发与技术工作
 
-| 场景 | 使用技能 |
-|------|----------|
-| 前端界面开发 | `frontend-design` - 高质量前端界面开发 |
-| Web 应用测试 | `webapp-testing` - 自动化测试 |
-| GitHub 仓库管理 | `github` - GitHub 操作 |
-| 构建 Claude Code 自动化 | `coding-agent` - Coding Agent 开发 |
+| 场景                    | 使用技能                                 |
+| ----------------------- | ---------------------------------------- |
+| 前端界面开发            | `frontend-design` - 高质量前端界面开发 |
+| Web 应用测试            | `webapp-testing` - 自动化测试          |
+| GitHub 仓库管理         | `github` - GitHub 操作                 |
+| 构建 Claude Code 自动化 | `coding-agent` - Coding Agent 开发     |
 
 #### 🎨 创意与设计
 
-| 场景 | 使用技能 |
-|------|----------|
+| 场景              | 使用技能                                       |
+| ----------------- | ---------------------------------------------- |
 | 创建精美网页/组件 | `web-artifacts-builder` - Web Artifacts 构建 |
-| 生成算法艺术 | `algorithmic-art` - 算法艺术生成 |
-| 图片/海报设计 | `canvas-design` - Canvas 设计 |
-| 品牌视觉设计 | `theme-factory` - 主题工厂 |
+| 生成算法艺术      | `algorithmic-art` - 算法艺术生成             |
+| 图片/海报设计     | `canvas-design` - Canvas 设计                |
+| 品牌视觉设计      | `theme-factory` - 主题工厂                   |
 
 #### 📱 Apple 生态集成
 
-| 场景 | 使用技能 |
-|------|----------|
-| 管理 Apple Notes 笔记 | `apple-notes` - 笔记管理 |
-| 同步 Apple Reminders 提醒 | `apple-reminders` - 提醒事项 |
-| 管理 Things Mac 任务 | `things-mac` - Things 任务管理 |
-| 发送 iMessage 消息 | `imsg` - iMessage 发送 |
+| 场景                      | 使用技能                         |
+| ------------------------- | -------------------------------- |
+| 管理 Apple Notes 笔记     | `apple-notes` - 笔记管理       |
+| 同步 Apple Reminders 提醒 | `apple-reminders` - 提醒事项   |
+| 管理 Things Mac 任务      | `things-mac` - Things 任务管理 |
+| 发送 iMessage 消息        | `imsg` - iMessage 发送         |
 
 #### 🔧 工具与效率
 
-| 场景 | 使用技能 |
-|------|----------|
+| 场景               | 使用技能                               |
+| ------------------ | -------------------------------------- |
 | 语音转文字（离线） | `openai-whisper` - 本地 Whisper 转录 |
-| 语音转文字（API） | `openai-whisper-api` - API 转录 |
-| AI 图片生成 | `openai-image-gen` - DALL-E 图片生成 |
-| GIF 搜索 | `gifgrep` - GIF 搜索工具 |
-| 天气查询 | `weather` - 天气信息 |
+| 语音转文字（API）  | `openai-whisper-api` - API 转录      |
+| AI 图片生成        | `openai-image-gen` - DALL-E 图片生成 |
+| GIF 搜索           | `gifgrep` - GIF 搜索工具             |
+| 天气查询           | `weather` - 天气信息                 |
 
 #### 🔌 扩展与集成
 
-| 场景 | 使用技能 |
-|------|----------|
-| 构建自定义 MCP 服务器 | `mcp-builder` - MCP 服务器开发 |
-| 安装/发布技能 | `skill-creator` / `clawhub` - 技能创建与发布 |
-| 发送邮件 | `email` / `feishu-mail` - 邮件管理 |
+| 场景                  | 使用技能                                         |
+| --------------------- | ------------------------------------------------ |
+| 构建自定义 MCP 服务器 | `mcp-builder` - MCP 服务器开发                 |
+| 安装/发布技能         | `skill-creator` / `clawhub` - 技能创建与发布 |
+| 发送邮件              | `email` / `feishu-mail` - 邮件管理           |
 
 ### 📊 与 OpenClaw 对比
 
@@ -499,11 +501,11 @@ MantisBot 的 40+ 技能可以覆盖工作和生活的方方面面，以下是�
 
 #### 前置要求
 
-| 依赖 | 最低版本 | 说明 |
-|------|---------|------|
-| Node.js | **18.11+** | 推荐 22.x，`--watch` 标志需要 18.11+ |
-| npm | 8+ | 随 Node.js 附带 |
-| git | 任意版本 | 克隆仓库必须 |
+| 依赖    | 最低版本         | 说明                                   |
+| ------- | ---------------- | -------------------------------------- |
+| Node.js | **22.22+** | 推荐 22.x LTS                                    |
+| npm     | 8+               | 随 Node.js 附带                        |
+| git     | 任意版本         | 克隆仓库必须                           |
 
 > **Windows 用户**：推荐使用 [nvm-windows](https://github.com/coreybutler/nvm-windows) 管理 Node.js 版本。
 
@@ -537,6 +539,7 @@ irm https://raw.githubusercontent.com/necboy/MantisBot/main/install.ps1 | iex
 ```
 
 > **Windows 执行策略**：一键命令（`irm | iex`）本身不受执行策略限制。本地执行时若 PowerShell 提示策略受限，安装脚本会尝试自动修复。若无法自动修复，手动运行一次：
+>
 > ```powershell
 > Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
 > ```
@@ -562,6 +565,7 @@ npm install
 >
 > 本项目使用 `zod@^4.x`，而 `openai@4.x/5.x` 声明了对 `zod@^3.x` 的可选对等依赖，npm v7+ 默认视为错误。
 > 仓库中已包含 `.npmrc`（`legacy-peer-deps=true`），安装时会自动处理。如仍出现 `ERESOLVE` 错误，请执行：
+>
 > ```bash
 > npm install --legacy-peer-deps
 > ```
@@ -622,17 +626,17 @@ npm run start
 
 #### NPM 脚本一览
 
-| 命令 | 说明 |
-|------|------|
-| `npm run dev` | **同时启动前后端**（热重载，日志合并输出） |
-| `npm run dev:backend` | 仅启动后端（热重载） |
-| `npm run build` | 编译后端 TypeScript → `dist/` |
-| `npm run build:ui` | 编译前端 → `web-ui/dist/` |
-| `npm run build:all` | 编译前后端 |
-| `npm run start` | 编译全部后以**生产模式**启动前后端 |
-| `npm run test` | 运行单元测试（监听模式） |
-| `npm run test:run` | 运行单元测试（单次） |
-| `npm run test:coverage` | 运行测试并生成覆盖率报告 |
+| 命令                      | 说明                                             |
+| ------------------------- | ------------------------------------------------ |
+| `npm run dev`           | **同时启动前后端**（热重载，日志合并输出） |
+| `npm run dev:backend`   | 仅启动后端（热重载）                             |
+| `npm run build`         | 编译后端 TypeScript →`dist/`                  |
+| `npm run build:ui`      | 编译前端 →`web-ui/dist/`                      |
+| `npm run build:all`     | 编译前后端                                       |
+| `npm run start`         | 编译全部后以**生产模式**启动前后端         |
+| `npm run test`          | 运行单元测试（监听模式）                         |
+| `npm run test:run`      | 运行单元测试（单次）                             |
+| `npm run test:coverage` | 运行测试并生成覆盖率报告                         |
 
 > **端口说明**：后端 API 运行在 `:8118`，Vite 开发服务器运行在 `:3000`，开发模式下 `/api`、`/ws`、`/health`、`/office-preview` 请求会自动代理到后端。
 

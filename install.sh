@@ -23,7 +23,8 @@ NC='\033[0m'
 
 # ── 配置 / Config ────────────────────────────────────────────
 REPO_URL="https://github.com/necboy/MantisBot.git"
-MIN_NODE_MAJOR=18
+MIN_NODE_MAJOR=22
+MIN_NODE_MINOR=22
 BACKEND_PORT=8118
 FRONTEND_PORT=3000
 PROJECT_DIR=""
@@ -51,6 +52,10 @@ node_major() {
   node --version 2>/dev/null | sed 's/v//' | cut -d. -f1
 }
 
+node_minor() {
+  node --version 2>/dev/null | sed 's/v//' | cut -d. -f2
+}
+
 # ────────────────────────────────────────────────────────────
 # STEP 1: 检查系统依赖
 # ────────────────────────────────────────────────────────────
@@ -63,12 +68,14 @@ check_prerequisites() {
 
   # ── Node.js ────────────────────────────────────────────────
   if cmd_exists node; then
-    local ver
-    ver=$(node_major)
-    if [[ "$ver" -ge "$MIN_NODE_MAJOR" ]]; then
+    local major minor
+    major=$(node_major)
+    minor=$(node_minor)
+    if [[ "$major" -gt "$MIN_NODE_MAJOR" ]] || \
+       [[ "$major" -eq "$MIN_NODE_MAJOR" && "$minor" -ge "$MIN_NODE_MINOR" ]]; then
       ok "Node.js $(node --version)"
     else
-      err "Node.js 版本过低  (当前 v${ver}, 需要 v${MIN_NODE_MAJOR}+)"
+      err "Node.js 版本过低  (当前 v${major}.${minor}, 需要 v${MIN_NODE_MAJOR}.${MIN_NODE_MINOR}+)"
       missing+=("nodejs")
     fi
   else
