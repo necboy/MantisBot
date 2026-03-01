@@ -22,6 +22,9 @@ const ALLOWED_ENV_KEYS = [
   'ANTHROPIC_BASE_URL',
   'ANTHROPIC_MODEL',
 
+  // Firecrawl API
+  'FIRECRAWL_API_KEY',
+
   // 代理设置
   'HTTP_PROXY',
   'HTTPS_PROXY',

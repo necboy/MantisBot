@@ -69,21 +69,6 @@ const DANGEROUS_TOOLS = new Set([
   'Write', 'write', 'Edit', 'edit'  // 文件写入也可能需要确认
 ]);
 
-// SDK 内置工具名称（使用 SDK 的大写命名）
-// 这些工具将使用 SDK 内置实现，不通过 MCP 注入
-const SDK_BUILTIN_TOOLS = new Set([
-  'Read', 'read',
-  'Write', 'write',
-  'Edit', 'edit',
-  'Bash', 'bash',
-  'Glob', 'glob',
-  'Grep', 'grep',
-  'WebSearch', 'websearch',
-  'WebFetch', 'webfetch',
-  'AskUserQuestion', 'askuserquestion',
-  'Task', 'task'
-]);
-
 // 需要通过 MCP 注入的工具（SDK 没有的）
 const MCP_ONLY_TOOLS = new Set([
   'memory_search',
@@ -92,6 +77,7 @@ const MCP_ONLY_TOOLS = new Set([
   'document',
   'logger',
   'cron_manage',  // 定时任务管理
+  'firecrawl',    // Firecrawl 网页搜索和抓取（与 WebFetch 互斥，取决于 FIRECRAWL_API_KEY）
   // 浏览器工具
   'browser_launch',
   'browser_close',
@@ -511,6 +497,12 @@ export class ClaudeAgentRunner extends EventEmitter {
     // 使用当前配置的模型，确保 SDK 使用正确的 API 端点和模型
     applyIsolatedEnv({ model: this.options.model });
 
+    // 检查是否启用 Firecrawl（优先）还是 WebFetch
+    // 如果设置了 FIRECRAWL_API_KEY，使用 Firecrawl MCP 工具
+    // 否则使用 SDK 内置的 WebFetch 工具
+    const useFirecrawl = !!process.env.FIRECRAWL_API_KEY;
+    console.log('[ClaudeAgentRunner] FIRECRAWL_API_KEY set:', useFirecrawl);
+
     // 构建系统提示词
     let systemPrompt = this.options.systemPrompt;
     if (!systemPrompt) {
@@ -535,12 +527,21 @@ export class ClaudeAgentRunner extends EventEmitter {
       systemPrompt = `${systemPrompt}\n\n${this.pluginSkillsPrompt}`;
     }
 
-    // 构建 MCP 工具 - 只包含 SDK 没有的特有工具
+    // 构建 MCP 工具 - 只保留 MCP_ONLY_TOOLS 中的工具
     const toolList = this.toolRegistry.listTools();
+
     // 过滤：只保留 MCP_ONLY_TOOLS 中的工具
-    const mcpOnlyToolList = toolList.filter((toolInfo: ToolInfo) =>
-      MCP_ONLY_TOOLS.has(toolInfo.name)
-    );
+    // 如果启用 WebFetch，则排除 firecrawl 工具
+    const mcpOnlyToolList = toolList.filter((toolInfo: ToolInfo) => {
+      if (!MCP_ONLY_TOOLS.has(toolInfo.name)) {
+        return false;
+      }
+      // 如果不使用 Firecrawl（即使用 WebFetch），排除 firecrawl 工具
+      if (!useFirecrawl && toolInfo.name === 'firecrawl') {
+        return false;
+      }
+      return true;
+    });
 
     console.log('[ClaudeAgentRunner] MCP only tools:', mcpOnlyToolList.map(t => t.name));
 
@@ -613,8 +614,8 @@ export class ClaudeAgentRunner extends EventEmitter {
       tools: [
         'Read', 'Write', 'Edit', 'Bash',
         'Glob', 'Grep',
-        // 'WebSearch', // 已禁用：使用 firecrawl MCP 替代
-        'WebFetch',
+        // 根据环境变量选择：有 FIRECRAWL_API_KEY 用 Firecrawl，否则用 WebFetch
+        ...(useFirecrawl ? [] : ['WebSearch', 'WebFetch']),
         'AskUserQuestion',
         // MCP 工具
         ...mcpOnlyToolList.map((t: ToolInfo) => t.name)
@@ -622,10 +623,17 @@ export class ClaudeAgentRunner extends EventEmitter {
       // 权限模式：使用 default 以确保 canUseTool 回调被调用
       // SDK 默认可能使用 bypassPermissions，导致 canUseTool 不被调用
       permissionMode: 'default',
-      // 禁用不需���的工具
+      // 禁用不需要的工具
       // - Skill: 防止 SDK 调用本机全局 Skills（~/.claude/skills/）
-      // - WebSearch: 使用项目配置的 MCP 工具替代（如 firecrawl）
-      disallowedTools: ['Skill', 'WebSearch', 'EnterPlanMode', 'ExitPlanMode', 'TodoWrite'],
+      // - WebSearch/WebFetch: 当使用 Firecrawl 时禁用，否则启用
+      disallowedTools: [
+        'Skill',
+        'EnterPlanMode',
+        'ExitPlanMode',
+        'TodoWrite',
+        // 根据环境变量决定禁用哪个
+        ...(useFirecrawl ? ['WebSearch', 'WebFetch'] : ['firecrawl'])
+      ],
       // Sandbox 配置 - 配置 ripgrep 搜索超时
       // SDK 内置 Glob/Grep 工具默认超时 20 秒，大目录搜索容易超时
       sandbox: {

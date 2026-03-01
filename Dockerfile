@@ -58,6 +58,9 @@ RUN npm run build
 ENV PLAYWRIGHT_BROWSERS_PATH=/app/.playwright
 RUN npx playwright install chromium
 
+# 安装 Firecrawl CLI
+RUN npm install -g firecrawl-cli
+
 # 备份内置 skills，供首次启动时初始化持久化卷
 RUN cp -r /app/skills /app/skills-default
 

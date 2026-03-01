@@ -1,5 +1,9 @@
 // src/entry.ts
 
+// 加载 .env 环境变量文件
+import dotenv from 'dotenv';
+dotenv.config();
+
 import { loadConfig, getConfig } from './config/loader.js';
 import {
   initializeChannels,

@@ -21,6 +21,7 @@ services:
     environment:
       - NODE_ENV=production
       - CONFIG_PATH=/app/config/config.json
+      - FIRECRAWL_API_KEY=${FIRECRAWL_API_KEY}
     restart: unless-stopped
 
   web-ui:
