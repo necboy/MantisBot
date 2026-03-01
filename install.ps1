@@ -415,6 +415,66 @@ function Install-PlaywrightBrowser {
 }
 
 # ------------------------------------------------------------
+# STEP 5c: Install poppler (PDF text extraction tools)
+# 安装 poppler PDF 工具
+# ------------------------------------------------------------
+function Install-Poppler {
+    Write-Step "Installing PDF Tools / 安装 PDF 工具 (poppler)"
+
+    if (Test-Cmd "pdftotext") {
+        $ver = (& pdftotext -v 2>&1) | Select-Object -First 1
+        Write-Ok "pdftotext already installed: $ver"
+        return
+    }
+
+    Write-Info "Installing poppler (pdftotext and other PDF command-line tools)..."
+    Write-Host ""
+
+    $installed = $false
+
+    # Try Chocolatey
+    if (Test-Cmd "choco") {
+        Write-Info "Using Chocolatey..."
+        & choco install poppler -y 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "poppler installed via Chocolatey"
+            $installed = $true
+        }
+    }
+
+    # Try Scoop
+    if (-not $installed -and (Test-Cmd "scoop")) {
+        Write-Info "Using Scoop..."
+        & scoop install poppler 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "poppler installed via Scoop"
+            $installed = $true
+        }
+    }
+
+    # Try winget
+    if (-not $installed -and (Test-Cmd "winget")) {
+        Write-Info "Using winget..."
+        & winget install --id oschwartz10612.Poppler --silent --accept-package-agreements --accept-source-agreements 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "poppler installed via winget"
+            $installed = $true
+        }
+    }
+
+    if (-not $installed) {
+        Write-Warn "Could not auto-install poppler. Manual options:"
+        Write-Hr
+        Write-Info "  Chocolatey:  choco install poppler"
+        Write-Info "  Scoop:       scoop install poppler"
+        Write-Info "  Manual ZIP:  https://github.com/oschwartz10612/poppler-windows/releases"
+        Write-Info "  (download, unzip, add bin\ folder to PATH)"
+        Write-Hr
+        Write-Info "PDF text extraction features may not work until poppler is installed."
+    }
+}
+
+# ------------------------------------------------------------
 # STEP 6: Start
 # 启动
 # ------------------------------------------------------------
@@ -495,6 +555,7 @@ function Main {
     Setup-Config
     Build-MantisBot
     Install-PlaywrightBrowser
+    Install-Poppler
     Start-MantisBot
 
     Write-Host ""

@@ -29,6 +29,8 @@ RUN apt-get update && apt-get install -y \
   fonts-wqy-zenhei \
   fonts-wqy-microhei \
   fonts-noto-cjk \
+  # PDF 文本提取工具
+  poppler-utils \
   && rm -rf /var/lib/apt/lists/*
 
 # 创建 Python 虚拟环境目录（用于持久化用户安装的包）

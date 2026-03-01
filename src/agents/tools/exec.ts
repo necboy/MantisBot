@@ -31,6 +31,10 @@ const ALLOWED_COMMANDS = [
   'mdls',        // 元数据查看
   'screencapture', // 截图工具
   'osascript',   // AppleScript 执行
+  // PDF 工具（poppler-utils / qpdf / pdftk）
+  'pdftotext', 'pdftoppm', 'pdfimages', 'pdfinfo',
+  'pdfseparate', 'pdfunite', 'pdftocairo',
+  'qpdf', 'pdftk',
 ];
 
 // 危险命令黑名单

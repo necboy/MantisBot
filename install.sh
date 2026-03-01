@@ -349,6 +349,55 @@ install_playwright_browser() {
 }
 
 # ────────────────────────────────────────────────────────────
+# STEP 5c: 安装 poppler-utils（PDF 文本提取工具）
+# ────────────────────────────────────────────────────────────
+install_poppler() {
+  step "安装 PDF 工具 / Installing PDF Tools (poppler-utils)"
+
+  if cmd_exists pdftotext; then
+    ok "pdftotext 已安装：$(pdftotext -v 2>&1 | head -1)"
+    return
+  fi
+
+  info "正在安装 poppler-utils（pdftotext 等 PDF 命令行工具）..."
+  echo ""
+
+  local IS_MAC=false
+  [[ "$(uname)" == "Darwin" ]] && IS_MAC=true
+
+  if $IS_MAC; then
+    if cmd_exists brew; then
+      if brew install poppler; then
+        ok "poppler 安装完成（macOS）"
+      else
+        warn "安装失败，请手动执行：brew install poppler"
+      fi
+    else
+      warn "未找到 Homebrew，请先安装 Homebrew 再运行："
+      info "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+      info "  然后执行：brew install poppler"
+    fi
+  else
+    # Linux：尝试 apt-get，再尝试 yum
+    if cmd_exists apt-get; then
+      if sudo apt-get install -y poppler-utils 2>/dev/null; then
+        ok "poppler-utils 安装完成（apt）"
+      else
+        warn "apt 安装失败，请手动执行：sudo apt-get install -y poppler-utils"
+      fi
+    elif cmd_exists yum; then
+      if sudo yum install -y poppler-utils 2>/dev/null; then
+        ok "poppler-utils 安装完成（yum）"
+      else
+        warn "yum 安装失败，请手动执行：sudo yum install -y poppler-utils"
+      fi
+    else
+      warn "无法检测到包管理器，请手动安装 poppler-utils"
+    fi
+  fi
+}
+
+# ────────────────────────────────────────────────────────────
 # STEP 6: 启动
 # ────────────────────────────────────────────────────────────
 start_project() {
@@ -435,6 +484,7 @@ main() {
   setup_config
   build_project
   install_playwright_browser
+  install_poppler
   start_project
 
   echo ""
