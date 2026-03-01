@@ -63,12 +63,40 @@ export interface AgentResult {
   attachments?: FileAttachment[];
 }
 
-// 敏感工具列表
+// 删除类工具（始终需要确认）
 const DANGEROUS_TOOLS = new Set([
   'delete', 'remove', 'unlink', 'rmdir',
-  'Bash', 'bash', 'exec',  // exec 对应 SDK 的 Bash
-  'Write', 'write', 'Edit', 'edit'  // 文件写入也可能需要确认
 ]);
+
+// Bash 执行工具名称集合（Bash / bash / exec 统一处理）
+const BASH_TOOLS = new Set(['Bash', 'bash', 'exec']);
+
+// 需要确认的危险 Bash 命令模式（跨平台：macOS / Linux / Windows）
+const DESTRUCTIVE_BASH_PATTERNS: RegExp[] = [
+  // === 版本控制 / 包发布（跨平台）===
+  /\bgit\s+push\b/,                               // git push（含 --force）
+  /\bnpm\s+publish\b/,                             // npm publish
+  /\byarn\s+publish\b/,                            // yarn publish
+  /\bpnpm\s+publish\b/,                            // pnpm publish
+
+  // === 文件删除 ===
+  /\brm\b/,                                        // macOS/Linux: 任何 rm 命令（含 rm file / rm -rf）
+  /\bdel\b/i,                                      // Windows cmd: del
+  /\b(rd|rmdir)\b/i,                               // Windows cmd: rd / rmdir（含 /s）
+  /Remove-Item\b/i,                                // PowerShell: Remove-Item（含 -Recurse/-Force）
+
+  // === 进程终止 ===
+  /\bpkill\b|\bkillall\b/,                         // macOS/Linux
+  /\btaskkill\b/i,                                 // Windows cmd
+  /Stop-Process\b/i,                               // PowerShell
+
+  // === 系统关机/重启 ===
+  /\bshutdown\b/,                                  // macOS/Linux + Windows (shutdown /s /r)
+  /\breboot\b/,                                    // macOS/Linux
+
+  // === Docker 危险操作（跨平台）===
+  /\bdocker\s+(rm|rmi|push|prune)\b/,
+];
 
 // 需要通过 MCP 注入的工具（SDK 没有的）
 const MCP_ONLY_TOOLS = new Set([
@@ -260,10 +288,17 @@ export class ClaudeAgentRunner extends EventEmitter {
   }
 
   /**
-   * 检查工具是否为危险操作
+   * 检查工具是否为删除类危险操作
    */
   private isDangerousTool(toolName: string): boolean {
     return DANGEROUS_TOOLS.has(toolName.toLowerCase());
+  }
+
+  /**
+   * 检查 Bash 命令是否匹配危险操作模式
+   */
+  private isDangerousBashCommand(command: string): boolean {
+    return DESTRUCTIVE_BASH_PATTERNS.some(pattern => pattern.test(command));
   }
 
   /**
@@ -273,15 +308,15 @@ export class ClaudeAgentRunner extends EventEmitter {
     toolName: string,
     toolInput: Record<string, unknown>
   ): PermissionRequest {
-    const isDangerous = this.isDangerousTool(toolName);
+    const isDangerous = this.isDangerousTool(toolName) ||
+      (BASH_TOOLS.has(toolName) && this.isDangerousBashCommand(
+        String(toolInput.command || toolInput.cmd || '')
+      ));
     let reason: string | undefined;
 
-    if (toolName === 'exec' || toolName === 'bash') {
+    if (BASH_TOOLS.has(toolName)) {
       const command = toolInput.command || toolInput.cmd || '';
       reason = `Will execute command: ${String(command).slice(0, 100)}`;
-    } else if (toolName === 'write' || toolName === 'edit') {
-      const path = toolInput.path || toolInput.file || '';
-      reason = `Will write to file: ${path}`;
     } else if (this.isDangerousTool(toolName)) {
       reason = `Tool "${toolName}" may perform destructive operation`;
     }
@@ -723,9 +758,25 @@ export class ClaudeAgentRunner extends EventEmitter {
           return result;
         }
 
-        // dangerous 模式（默认）：仅危险工具需要确认
+        // dangerous 模式（默认）：Bash 检查命令内容，删除操作始终确认
+
+        // 1. Bash/exec 工具：仅对危险命令模式需要确认
+        if (BASH_TOOLS.has(resolvedName)) {
+          const command = String(resolvedInput.command || resolvedInput.cmd || '');
+          if (this.isDangerousBashCommand(command)) {
+            console.log('[ClaudeAgentRunner] Dangerous bash command (mode=dangerous):', command.slice(0, 100));
+            const permissionRequest = this.createPermissionRequest(resolvedName, resolvedInput);
+            this.emit('permissionRequest', permissionRequest);
+            const result = await this.waitForPermission(permissionRequest.requestId);
+            return result;
+          }
+          console.log('[ClaudeAgentRunner] Safe bash command, allowing:', resolvedName);
+          return { behavior: 'allow', updatedInput: resolvedInput };
+        }
+
+        // 2. 删除类工具：始终需要确认
         if (this.isDangerousTool(resolvedName)) {
-          console.log('[ClaudeAgentRunner] Dangerous tool detected (mode=dangerous):', resolvedName);
+          console.log('[ClaudeAgentRunner] Delete tool detected (mode=dangerous):', resolvedName);
           const permissionRequest = this.createPermissionRequest(resolvedName, resolvedInput);
 
           // 通过事件发出权限请求（供外部监听）

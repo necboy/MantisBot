@@ -1,6 +1,6 @@
 // web-ui/src/components/PermissionModal.tsx
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface QuestionOption {
@@ -36,9 +36,38 @@ const PermissionModal: React.FC<PermissionModalProps> = ({
   const { t } = useTranslation();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedAnswers, setSelectedAnswers] = useState<Record<number, number[]>>({});
+  const [countdown, setCountdown] = useState(60);
+  const countdownRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // 检查是否为 AskUserQuestion
   const isAskUserQuestion = permission.toolName === 'AskUserQuestion' || permission.toolName === 'askuserquestion';
+
+  // 权限确认弹窗：启动60秒倒计时，超时自动通过
+  useEffect(() => {
+    if (isAskUserQuestion) return;
+
+    countdownRef.current = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownRef.current!);
+          onRespond(true);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => {
+      if (countdownRef.current) clearInterval(countdownRef.current);
+    };
+  }, [isAskUserQuestion, onRespond]);
+
+  const clearCountdown = () => {
+    if (countdownRef.current) {
+      clearInterval(countdownRef.current);
+      countdownRef.current = null;
+    }
+  };
   const questions: Question[] = isAskUserQuestion && permission.toolInput.questions
     ? (permission.toolInput.questions as Question[])
     : [];
@@ -96,6 +125,7 @@ const PermissionModal: React.FC<PermissionModalProps> = ({
   };
 
   const handleApprove = async () => {
+    clearCountdown();
     setIsSubmitting(true);
     try {
       onRespond(true);
@@ -105,6 +135,7 @@ const PermissionModal: React.FC<PermissionModalProps> = ({
   };
 
   const handleDeny = async () => {
+    clearCountdown();
     setIsSubmitting(true);
     try {
       onRespond(false);
@@ -322,7 +353,7 @@ const PermissionModal: React.FC<PermissionModalProps> = ({
           <button
             onClick={handleApprove}
             disabled={isSubmitting}
-            className={`px-4 py-2 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed ${
+            className={`px-4 py-2 text-white rounded-md disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2 ${
               dangerLevel === 'high'
                 ? 'bg-red-600 hover:bg-red-700'
                 : dangerLevel === 'medium'
@@ -331,6 +362,11 @@ const PermissionModal: React.FC<PermissionModalProps> = ({
             }`}
           >
             {isSubmitting ? t('permission.processing') : t('permission.allow')}
+            {!isSubmitting && (
+              <span className="text-xs opacity-75 bg-white/20 rounded px-1.5 py-0.5 font-mono">
+                {countdown}s
+              </span>
+            )}
           </button>
         </div>
       </div>

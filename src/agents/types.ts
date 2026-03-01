@@ -128,13 +128,41 @@ export interface ToolExecutionResult {
 }
 
 /**
- * 敏感工具列表
+ * 删除类工具（始终需要确认）
  */
 export const DANGEROUS_TOOLS = new Set([
   'delete', 'remove', 'unlink', 'rmdir',
-  'Bash', 'bash', 'exec',
-  'Write', 'write', 'Edit', 'edit'
 ]);
+
+/**
+ * Bash 执行工具名称集合
+ */
+export const BASH_TOOLS = new Set(['Bash', 'bash', 'exec']);
+
+/**
+ * 需要确认的危险 Bash 命令模式（跨平台：macOS / Linux / Windows）
+ */
+export const DESTRUCTIVE_BASH_PATTERNS: RegExp[] = [
+  // === 版本控制 / 包发布（跨平台）===
+  /\bgit\s+push\b/,
+  /\bnpm\s+publish\b/,
+  /\byarn\s+publish\b/,
+  /\bpnpm\s+publish\b/,
+  // === 文件删除 ===
+  /\brm\b/,                              // macOS/Linux: 任何 rm 命令
+  /\bdel\b/i,                            // Windows cmd: del
+  /\b(rd|rmdir)\b/i,                     // Windows cmd: rd / rmdir
+  /Remove-Item\b/i,                      // PowerShell: Remove-Item
+  // === 进程终止 ===
+  /\bpkill\b|\bkillall\b/,
+  /\btaskkill\b/i,
+  /Stop-Process\b/i,
+  // === 系统关机/重启 ===
+  /\bshutdown\b/,
+  /\breboot\b/,
+  // === Docker 危险操作 ===
+  /\bdocker\s+(rm|rmi|push|prune)\b/,
+];
 
 /**
  * 工具结果截断配置

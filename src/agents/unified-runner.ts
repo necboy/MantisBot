@@ -93,6 +93,11 @@ export class UnifiedAgentRunner extends EventEmitter implements IAgentRunner {
       console.log(`[UnifiedRunner] Using OpenAICompatRunner for model: ${options.model}`);
       this.openaiRunner = new OpenAICompatRunner(toolRegistry, options);
       this.runner = this.openaiRunner;
+
+      // 转发 OpenAI Runner 的权限请求事件
+      this.openaiRunner.on('permissionRequest', (request: any) => {
+        this.emit('permissionRequest', request);
+      });
     }
   }
 

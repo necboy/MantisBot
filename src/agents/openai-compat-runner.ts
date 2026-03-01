@@ -13,7 +13,10 @@ import {
   type AgentResult,
   type AgentRunnerOptions,
   type ToolCallInfo,
+  type PermissionRequest,
   DANGEROUS_TOOLS,
+  BASH_TOOLS,
+  DESTRUCTIVE_BASH_PATTERNS,
   MAX_TOOL_RESULT_CHARS,
   TRUNCATION_SUFFIX,
 } from './types.js';
@@ -86,6 +89,14 @@ export class OpenAICompatRunner extends EventEmitter {
   };
   private abortController: AbortController | null = null;
 
+  // 权限请求等待队列
+  private pendingPermissions: Map<string, {
+    resolve: (approved: boolean) => void;
+  }> = new Map();
+
+  // 存储权限请求时的原始输入
+  private permissionOriginalInputs = new Map<string, Record<string, unknown>>();
+
   constructor(
     toolRegistry: ToolRegistry,
     options: AgentRunnerOptions = {}
@@ -128,10 +139,118 @@ export class OpenAICompatRunner extends EventEmitter {
   }
 
   /**
-   * 检查工具是否为危险操作
+   * 检查工具是否为删除类危险操作
    */
   private isDangerousTool(toolName: string): boolean {
     return DANGEROUS_TOOLS.has(toolName.toLowerCase());
+  }
+
+  /**
+   * 检查 Bash 命令是否匹配危险操作模式
+   */
+  private isDangerousBashCommand(command: string): boolean {
+    return DESTRUCTIVE_BASH_PATTERNS.some(pattern => pattern.test(command));
+  }
+
+  /**
+   * 检查工具是否需要权限确认，需要时发出事件并等待用户响应
+   * 返回 true = 允许执行，false = 拒绝
+   */
+  private async checkToolPermission(
+    toolName: string,
+    toolInput: Record<string, unknown>,
+    abortSignal?: AbortSignal
+  ): Promise<boolean> {
+    const approvalMode = this.options.approvalMode;
+
+    if (approvalMode === 'auto') return true;
+
+    const isBash = BASH_TOOLS.has(toolName);
+    const command = isBash ? String(toolInput.command || toolInput.cmd || '') : '';
+    const isDangerousBash = isBash && this.isDangerousBashCommand(command);
+    const isDeleteTool = this.isDangerousTool(toolName);
+
+    const needsPermission = approvalMode === 'ask' || isDangerousBash || isDeleteTool;
+    if (!needsPermission) return true;
+
+    const requestId = crypto.randomUUID();
+    const request: PermissionRequest = {
+      requestId,
+      toolName,
+      toolInput,
+      isDangerous: isDangerousBash || isDeleteTool,
+      reason: isBash
+        ? `Will execute command: ${command.slice(0, 100)}`
+        : `Tool "${toolName}" may perform destructive operation`,
+    };
+
+    this.permissionOriginalInputs.set(requestId, toolInput);
+    this.emit('permissionRequest', request);
+
+    return this.waitForPermission(requestId, abortSignal);
+  }
+
+  /**
+   * 等待权限响应
+   */
+  private waitForPermission(
+    requestId: string,
+    abortSignal?: AbortSignal,
+    timeoutMs: number = 60000
+  ): Promise<boolean> {
+    return new Promise((resolve) => {
+      const timeout = setTimeout(() => {
+        this.pendingPermissions.delete(requestId);
+        this.permissionOriginalInputs.delete(requestId);
+        console.warn(`[OpenAICompatRunner] Permission request timeout: ${requestId}, auto-approving`);
+        resolve(true);
+      }, timeoutMs);
+
+      const abortHandler = () => {
+        clearTimeout(timeout);
+        this.pendingPermissions.delete(requestId);
+        this.permissionOriginalInputs.delete(requestId);
+        resolve(false);
+      };
+      abortSignal?.addEventListener('abort', abortHandler, { once: true });
+
+      this.pendingPermissions.set(requestId, {
+        resolve: (approved: boolean) => {
+          clearTimeout(timeout);
+          abortSignal?.removeEventListener('abort', abortHandler);
+          resolve(approved);
+        },
+      });
+    });
+  }
+
+  /**
+   * 响应权限请求（供外部调用，如 HTTP Server）
+   */
+  async respondToPermission(
+    requestId: string,
+    approved: boolean,
+    _updatedInput?: Record<string, unknown>
+  ): Promise<void> {
+    const pending = this.pendingPermissions.get(requestId);
+    if (!pending) {
+      console.warn(`[OpenAICompatRunner] No pending permission request for ID: ${requestId}`);
+      return;
+    }
+    this.pendingPermissions.delete(requestId);
+    this.permissionOriginalInputs.delete(requestId);
+    pending.resolve(approved);
+  }
+
+  /**
+   * 清理资源
+   */
+  dispose(): void {
+    for (const [, pending] of this.pendingPermissions) {
+      pending.resolve(false);
+    }
+    this.pendingPermissions.clear();
+    this.permissionOriginalInputs.clear();
   }
 
   /**
@@ -259,6 +378,24 @@ export class OpenAICompatRunner extends EventEmitter {
         console.log(`${'='.repeat(80)}`);
 
         yield { type: 'tool_use', tool: tc.name, toolId: tc.id, args: tc.arguments };
+
+        // 权限检查
+        const permitted = await this.checkToolPermission(tc.name, tc.arguments, abortSignal);
+        if (!permitted) {
+          console.log(`[OpenAICompatRunner] Tool execution denied by user: ${tc.name}`);
+          messages.push({
+            role: 'assistant',
+            content: currentContent,
+            tool_calls: [{ id: tc.id, name: tc.name, arguments: tc.arguments }],
+          });
+          messages.push({
+            role: 'tool',
+            toolCallId: tc.id,
+            content: 'Tool execution was denied by user.',
+          });
+          yield { type: 'tool_result', tool: tc.name, result: { error: 'Permission denied by user' }, isError: true };
+          continue;
+        }
 
         try {
           const result = await this.toolRegistry.execute(tc.name, tc.arguments);
