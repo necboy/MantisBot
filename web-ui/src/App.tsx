@@ -237,6 +237,9 @@ function App() {
   // 停止对话相关
   const abortControllerRef = useRef<AbortController | null>(null);
 
+  // 追踪活跃流式会话的消息缓存（用于在切换会话后再切回时恢复中间状态）
+  const activeStreamRef = useRef<{ sessionId: string; messages: Message[] } | null>(null);
+
   // 通知相关状态
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -1034,12 +1037,19 @@ function App() {
     // 如果已经在当前会话，不需要重新加载
     if (currentSession === id) return;
 
-    // 立即显示加载状态
-    setSessionLoading(true);
     setCurrentSession(id);
     // 切换会话时清空截图和终端输出（每个会话独立）
     setBrowserSnapshots([]);
     setTerminalOutputs([]);
+
+    // 如果该会话有活跃的流式传输，直接从缓存恢复消息，避免覆盖中间状态
+    if (activeStreamRef.current?.sessionId === id) {
+      setMessages(activeStreamRef.current.messages);
+      return;
+    }
+
+    // 立即显示加载状态
+    setSessionLoading(true);
     // 先清空消息，避免显示旧会话内容
     setMessages([]);
 
@@ -1224,7 +1234,21 @@ function App() {
     setInput('');
     setLoading(true);
 
-    // 新增：构建完整的用户消息（包含文件引用）
+    // 捕获当前会话 ID，用于流式消息缓存（支持切换会话后再切回时恢复状态）
+    const streamSessionId = currentSession!;
+    // 初始化流式缓存（快照当前消息列表）
+    activeStreamRef.current = { sessionId: streamSessionId, messages: [...messages] };
+    // 辅助函数：同时更新 React 状态和流式缓存
+    const setStreamMessages = (updater: (prev: Message[]) => Message[]) => {
+      if (activeStreamRef.current?.sessionId === streamSessionId) {
+        activeStreamRef.current.messages = updater(activeStreamRef.current.messages);
+      }
+      if (currentSessionRef.current === streamSessionId) {
+        setMessages(updater);
+      }
+    };
+
+    // 新增：构建完整的用户���息（包含文件引用）
     let fullMessage = userMessage;
 
     if (fileReferences.length > 0) {
@@ -1250,7 +1274,7 @@ function App() {
     const assistantMsgId = generateUUID();
 
     // Optimistic update - 添加用户消息
-    setMessages(prev => [...prev, {
+    setStreamMessages(prev => [...prev, {
       id: userMsgId,
       role: 'user',
       content: fullMessage,
@@ -1258,7 +1282,7 @@ function App() {
     }]);
 
     // 添加一个助手消息占位符（空内容，等待流式事件填充）
-    setMessages(prev => [...prev, {
+    setStreamMessages(prev => [...prev, {
       id: assistantMsgId,
       role: 'assistant',
       content: '',
@@ -1292,7 +1316,7 @@ function App() {
             errMsg = errData.message;
           }
         } catch { /* 忽略解析失败 */ }
-        setMessages(prev => prev.map(msg =>
+        setStreamMessages(prev => prev.map(msg =>
           msg.id === assistantMsgId ? { ...msg, content: errMsg } : msg
         ));
         return;
@@ -1335,7 +1359,7 @@ function App() {
 
               // 处理 thinking 事件（思考过程流式输出）
               if (currentEvent === 'thinking' && parsed.content !== undefined) {
-                setMessages(prev => prev.map(msg => {
+                setStreamMessages(prev => prev.map(msg => {
                   if (msg.id === currentAssistantMsgId) {
                     const currentThinking = isFirstThinkingChunk ? '' : (msg.thinking || '');
                     isFirstThinkingChunk = false;
@@ -1354,7 +1378,7 @@ function App() {
                   isFirstTextChunk = true;
                   isFirstThinkingChunk = true;
                   hadToolAfterText = false;
-                  setMessages(prev => [...prev, {
+                  setStreamMessages(prev => [...prev, {
                     id: newMsgId,
                     role: 'assistant' as const,
                     content: '',
@@ -1363,7 +1387,7 @@ function App() {
                 } else {
                   hadToolAfterText = false;
                 }
-                setMessages(prev => prev.map(msg => {
+                setStreamMessages(prev => prev.map(msg => {
                   if (msg.id === currentAssistantMsgId) {
                     const currentContent = isFirstTextChunk ? '' : msg.content;
                     isFirstTextChunk = false;
@@ -1376,7 +1400,7 @@ function App() {
               // 处理 tool 事件（工具调用）
               if (currentEvent === 'tool') {
                 console.log('[App] Tool event received:', { status: parsed.status, tool: parsed.tool, args: parsed.args });
-                setMessages(prev => prev.map(msg => {
+                setStreamMessages(prev => prev.map(msg => {
                   if (msg.id === currentAssistantMsgId) {
                     // 工具调用追加到当前气泡的 toolStatus 列表
                     const existing = msg.toolStatus || [];
@@ -1520,7 +1544,7 @@ function App() {
               // 处理 error 事件（错误）
               if (currentEvent === 'error') {
                 console.log('[App] Error:', parsed);
-                setMessages(prev => prev.map(msg => {
+                setStreamMessages(prev => prev.map(msg => {
                   if (msg.id === currentAssistantMsgId) {
                     return {
                       ...msg,
@@ -1539,10 +1563,10 @@ function App() {
               }
 
               // 处理 done 事件中的附件（如截图、send_file 发送的文件）
-              // ��用 currentAssistantMsgId 确保附件添加到最后一个消息气泡
+              // 复用 currentAssistantMsgId 确保附件添加到最后一个消息气泡
               if (currentEvent === 'done' && parsed.attachments) {
                 console.log('[App] Received done event with attachments:', parsed.attachments.length);
-                setMessages(prev => prev.map(msg => {
+                setStreamMessages(prev => prev.map(msg => {
                   if (msg.id === currentAssistantMsgId) {
                     return { ...msg, attachments: parsed.attachments };
                   }
@@ -1620,7 +1644,7 @@ function App() {
       }
 
       // 错误时更新助手消息
-      setMessages(prev => prev.map(msg =>
+      setStreamMessages(prev => prev.map(msg =>
         msg.id === assistantMsgId
           ? { ...msg, content: errorMessage }
           : msg
@@ -1640,6 +1664,8 @@ function App() {
     } finally {
       setLoading(false);
       abortControllerRef.current = null;
+      // 流式传输结束，清除消息缓存
+      activeStreamRef.current = null;
       // 延迟刷新会话列表，获取可能生成的标题
       setTimeout(() => fetchSessions(), 1500);
     }
