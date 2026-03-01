@@ -213,6 +213,7 @@ function App() {
   const { t } = useTranslation();
 
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [sessionsLoading, setSessionsLoading] = useState(false);
   const [currentSession, setCurrentSession] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -222,7 +223,7 @@ function App() {
   const [selectedModel, setSelectedModel] = useState<string>('gpt-4');
   const [approvalMode, setApprovalMode] = useState<ApprovalMode>('dangerous');  // 审批模式，默认仅危险操作询问
   const [starredExpanded, setStarredExpanded] = useState(true);  // 星标分组是否展开
-  const [canvasOpen, setCanvasOpen] = useState(true);
+  const [canvasOpen, setCanvasOpen] = useState(() => window.innerWidth >= 768);
   const [currentFile, setCurrentFile] = useState<FileItem | null>(null);
   const [cronOpen, setCronOpen] = useState(false);
   const [tunnelOpen, setTunnelOpen] = useState(false);
@@ -231,6 +232,9 @@ function App() {
   // 批量选择删除
   const [isSelectMode, setIsSelectMode] = useState(false);
   const [selectedSessionIds, setSelectedSessionIds] = useState<Set<string>>(new Set());
+
+  // 移动端侧边栏开关
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // 后端连接状态
   const [backendStatus, setBackendStatus] = useState<'checking' | 'connected' | 'reconnecting'>('checking');
@@ -352,12 +356,12 @@ function App() {
     // 首次检查
     checkBackendHealth();
 
-    // 定期健康检查（每 30 秒）
+    // 定期健康检查（每 30 秒）——使用 ref 避免 stale closure 问题
     const healthCheckInterval = setInterval(() => {
-      if (backendStatus === 'connected') {
+      if (backendStatusRef.current === 'connected') {
         checkBackendHealth();
       }
-    }, 30000);
+    }, 10000);
 
     return () => {
       isMounted = false;
@@ -771,6 +775,10 @@ function App() {
         isConnecting = false;
         // 标记已连接
         wsRef.current = { ws, isConnected: true };
+        // WS 连接成功即可确认后端已就绪，立即清除连接 banner
+        setBackendStatus('connected');
+        setHealthError('');
+        setRetryCount(0);
       };
 
       ws.onmessage = (event) => {
@@ -983,6 +991,7 @@ function App() {
   }
 
   async function fetchSessions() {
+    setSessionsLoading(true);
     try {
       const res = await authFetch('/api/sessions');
       const data = await res.json();
@@ -992,6 +1001,8 @@ function App() {
       }
     } catch (e) {
       console.error('Failed to fetch sessions:', e);
+    } finally {
+      setSessionsLoading(false);
     }
   }
 
@@ -1775,9 +1786,23 @@ function App() {
         </div>
       )}
 
-      <div className="h-screen flex flex-col md:flex-row overflow-hidden">
+      <div className="h-screen flex overflow-hidden">
+        {/* 移动端侧边栏遮罩 */}
+        {sidebarOpen && (
+          <div
+            className="md:hidden fixed inset-0 z-30 bg-black/50"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        {/* 移动端 Canvas 遮罩 */}
+        {canvasOpen && (
+          <div
+            className="md:hidden fixed inset-0 z-30 bg-black/50"
+            onClick={() => { setCanvasOpen(false); setCanvasForceMode(undefined); }}
+          />
+        )}
         {/* Sidebar */}
-        <aside className="w-full md:w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full">
+        <aside className={`fixed md:relative inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full transform transition-transform duration-300 ease-in-out md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-primary-600">
@@ -1901,6 +1926,7 @@ function App() {
                       });
                     } else {
                       selectSession(session.id);
+                      setSidebarOpen(false);
                     }
                   }}
                   className={`w-full text-left px-4 py-3 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group ${
@@ -1933,7 +1959,15 @@ function App() {
           )}
 
           {/* 普通会话列表（未星标） */}
-          {sessions.filter(s => !s.starred).map(session => (
+          {sessionsLoading && sessions.length === 0 ? (
+            <div className="flex items-center justify-center py-8 text-gray-400 dark:text-gray-600">
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+            </div>
+          ) : (
+          sessions.filter(s => !s.starred).map(session => (
             <button
               key={session.id}
               onClick={() => {
@@ -1945,6 +1979,7 @@ function App() {
                   });
                 } else {
                   selectSession(session.id);
+                  setSidebarOpen(false);
                 }
               }}
               className={`w-full text-left px-4 py-3 flex items-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors group ${
@@ -1971,7 +2006,7 @@ function App() {
                 </>
               )}
             </button>
-          ))}
+          )))}
         </div>
 
         {/* 批量删除操作栏 */}
@@ -2030,18 +2065,28 @@ function App() {
         </div>
       </aside>
 
-      {/* Main content and Canvas container */}
-      <div className="flex-1 flex h-full overflow-hidden min-w-0">
+        {/* Main content and Canvas container */}
+        <div className="flex-1 flex h-full overflow-hidden min-w-0">
         {/* Main content */}
         <main className="flex-1 flex flex-col h-full transition-all duration-300 min-w-0">
         {/* Model selector & Notification Bell */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-shrink-0 flex items-center justify-between">
+        <div className="px-2 py-2 md:p-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900 flex-shrink-0 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2">
+            {/* 移动端汉堡菜单 */}
+            <button
+              onClick={() => setSidebarOpen(v => !v)}
+              className="md:hidden p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-600 dark:text-gray-400 flex-shrink-0"
+              aria-label="打开菜单"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            </button>
             {config?.models && config.models.length >= 1 && (
               <select
                 value={selectedModel}
                 onChange={e => setSelectedModel(e.target.value)}
-                className="px-3 py-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm"
+                className="px-2 py-1.5 md:px-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm max-w-[120px] md:max-w-none"
               >
                 {config.models.map(m => (
                   <option key={m.name} value={m.name}>{m.name}</option>
@@ -2088,7 +2133,7 @@ function App() {
 
         {/* Messages */}
         <div
-          className="flex-1 overflow-y-auto overflow-x-hidden p-4 space-y-4 min-h-0 relative"
+          className="flex-1 overflow-y-auto overflow-x-hidden p-2 md:p-4 space-y-4 min-h-0 relative"
           onScroll={handleMessagesScroll}
         >
           {/* Global Error Display */}
@@ -2397,7 +2442,7 @@ function App() {
         </div>
 
         {/* Input */}
-        <div className="p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div className="p-2 md:p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
           {/* 审批模式 + 工作目录选择器 */}
           <div className="flex items-center gap-2 mb-2">
             {/* 审批模式选择器 */}
@@ -2438,7 +2483,7 @@ function App() {
                     updateWorkDir(newDir);
                   }
                 }}
-                className="text-primary-600 dark:text-primary-400 hover:underline font-mono text-xs truncate max-w-md"
+                className="text-primary-600 dark:text-primary-400 hover:underline font-mono text-xs truncate max-w-[120px] md:max-w-md"
                 title={t('app.clickToChange')}
               >
                 {currentWorkDir}

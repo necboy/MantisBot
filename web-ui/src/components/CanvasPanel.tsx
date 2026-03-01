@@ -73,15 +73,18 @@ export function CanvasPanel({
 }: CanvasPanelProps) {
   const { t } = useTranslation();
 
-  // 默认宽度为屏幕宽度的 40%
+  // 移动端检测（< 768px 即 Tailwind md 断点）
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+
+  // 默认宽度为屏幕宽度的 40%（仅桌面端侧边栏使用）
   const [width, setWidth] = useState(() => Math.floor(window.innerWidth * 0.4));
 
-  // 响应窗口大小变化，自动调整宽度（保持比例）
+  // 响应窗口大小变化，同步移动端判断和侧边栏宽度
   useEffect(() => {
     const handleResize = () => {
+      setIsMobile(window.innerWidth < 768);
       setWidth(prevWidth => {
         const newWidth = Math.floor(window.innerWidth * 0.4);
-        // 如果当前宽度超出新窗口的合理范围，则更新
         const maxWidth = Math.floor(window.innerWidth * 0.8);
         if (prevWidth > maxWidth || prevWidth < 300) {
           return Math.max(300, Math.min(maxWidth, newWidth));
@@ -158,6 +161,16 @@ export function CanvasPanel({
     }
   };
 
+  // 移动端底部抽屉下拉关闭手势
+  const touchStartYRef = useRef<number>(0);
+  const handleDragHandleTouchStart = (e: React.TouchEvent) => {
+    touchStartYRef.current = e.touches[0].clientY;
+  };
+  const handleDragHandleTouchEnd = (e: React.TouchEvent) => {
+    const deltaY = e.changedTouches[0].clientY - touchStartYRef.current;
+    if (deltaY > 80) onClose();
+  };
+
   // 终端输出滚动处理：检测用户是否滚动到底部
   const handleTerminalScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
@@ -195,10 +208,25 @@ export function CanvasPanel({
 
   return (
     <div
-      className="h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 flex flex-col shadow-xl flex-shrink-0"
-      style={{ width: `${width}px`, minWidth: '300px' }}
+      className={isMobile
+        ? 'fixed bottom-0 inset-x-0 z-40 h-[65vh] bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300'
+        : 'h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 flex flex-col shadow-xl flex-shrink-0'
+      }
+      style={!isMobile ? { width: `${width}px`, minWidth: '300px' } : undefined}
     >
-      {/* 拖拽调整宽度 */}
+      {/* 移动端拖拽把手（下滑 > 80px 关闭） */}
+      {isMobile && (
+        <div
+          className="flex justify-center pt-3 pb-1 flex-shrink-0 cursor-grab active:cursor-grabbing touch-none"
+          onTouchStart={handleDragHandleTouchStart}
+          onTouchEnd={handleDragHandleTouchEnd}
+        >
+          <div className="w-10 h-1.5 bg-gray-300 dark:bg-gray-600 rounded-full" />
+        </div>
+      )}
+
+      {/* 桌面端拖拽调整宽度 */}
+      {!isMobile && (
       <div
         className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary-500 transition-colors"
         onMouseDown={(e) => {
@@ -218,6 +246,7 @@ export function CanvasPanel({
           document.addEventListener('mouseup', onMouseUp);
         }}
       />
+      )}
 
       {/* 头部 */}
       <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
