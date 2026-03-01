@@ -571,15 +571,23 @@ node scripts/kill-port.cjs 8118
 这是正常现象，系统已自动切换到纯 JS 实现，不影响功能使用。若需原生向量性能，可安装对应平台包：
 
 ```bash
-# Windows ARM64
-npm install sqlite-vec-windows-arm64
-
 # Windows x64
 npm install sqlite-vec-windows-x64
 
 # macOS Apple Silicon
 npm install sqlite-vec-darwin-arm64
+
+# macOS x64
+npm install sqlite-vec-darwin-x64
+
+# Linux x64
+npm install sqlite-vec-linux-x64
+
+# Linux ARM64
+npm install sqlite-vec-linux-arm64
 ```
+
+> **注意**：Windows ARM64（如 Surface Pro X、Snapdragon 系列）暂无原生扩展包，系统会自动使用 JS fallback，无需额外操作。
 
 **如何修改默认登录密码**
 

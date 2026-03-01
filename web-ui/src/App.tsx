@@ -295,6 +295,8 @@ function App() {
   useEffect(() => {
     let retryTimer: ReturnType<typeof setTimeout>;
     let isMounted = true;
+    let failureCount = 0;   // 连续失败次数（用于区分启动等待与真实断线）
+    let hasConnected = false; // 是否曾经成功连接过
 
     const checkBackendHealth = async () => {
       try {
@@ -306,6 +308,8 @@ function App() {
         if (!isMounted) return;
 
         if (response.ok) {
+          hasConnected = true;
+          failureCount = 0;
           setBackendStatus('connected');
           setRetryCount(0);
           setHealthError('');
@@ -315,10 +319,16 @@ function App() {
       } catch (error) {
         if (!isMounted) return;
 
+        failureCount++;
         const msg = error instanceof Error ? error.message : String(error);
         setHealthError(msg.includes('Failed to fetch') || msg.includes('fetch') ? '无法连接到服务器' : msg);
-        setBackendStatus('reconnecting');
         setRetryCount(prev => prev + 1);
+
+        // 曾经连接过（真实断开）或启动等待超 2 次（10 秒），才切换到 reconnecting
+        // 初次启动时给后端 10 秒宽限，避免出现短暂的橙色报错闪烁
+        if (hasConnected || failureCount > 2) {
+          setBackendStatus('reconnecting');
+        }
 
         // 5 秒后重试
         retryTimer = setTimeout(checkBackendHealth, 5000);
@@ -614,8 +624,10 @@ function App() {
   // Use refs to avoid unnecessary reconnections
   const currentSessionRef = useRef(currentSession);
   const sessionsRef = useRef(sessions);
+  const backendStatusRef = useRef(backendStatus);
   currentSessionRef.current = currentSession;
   sessionsRef.current = sessions;
+  backendStatusRef.current = backendStatus;
 
   // 键盘快捷键：Cmd/Ctrl + K 打开命令面板，Esc 停止对话
   useEffect(() => {
@@ -718,6 +730,17 @@ function App() {
       // 防止重复连接
       if (isConnecting) {
         console.log('[WebSocket] Already connecting, skipping...');
+        return;
+      }
+
+      // 后端未就绪时等待，避免产生 ECONNREFUSED 代理错误
+      if (backendStatusRef.current !== 'connected') {
+        if (!reconnectTimeout) {
+          reconnectTimeout = setTimeout(() => {
+            reconnectTimeout = null;
+            connect();
+          }, 2000);
+        }
         return;
       }
 

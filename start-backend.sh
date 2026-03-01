@@ -4,14 +4,14 @@
 # 自动清理旧进程，确保只有一个实例运行
 
 echo "🧹 清理旧进程..."
-pkill -f "tsx.*src/entry.ts" 2>/dev/null
+pkill -f "tsx/esm.*src/entry\.ts" 2>/dev/null
 sleep 1
 
 # 确认清理完成
-REMAINING=$(ps aux | grep -E "tsx.*src/entry.ts" | grep -v grep | wc -l)
+REMAINING=$(ps aux | grep -E "tsx/esm.*src/entry\.ts" | grep -v grep | wc -l)
 if [ "$REMAINING" -gt 0 ]; then
     echo "⚠️  强制清理残留进程..."
-    pkill -9 -f "tsx.*src/entry.ts" 2>/dev/null
+    pkill -9 -f "tsx/esm.*src/entry\.ts" 2>/dev/null
     sleep 1
 fi
 
@@ -35,10 +35,10 @@ if [ ! -d "node_modules" ]; then
 fi
 
 # 启动并保存日志
-npx tsx watch src/entry.ts 2>&1 | tee /tmp/mantis-backend.log &
+node --watch --import tsx/esm src/entry.ts 2>&1 | tee /tmp/mantis-backend.log &
 
 sleep 3
 echo "✅ MantisBot 后端已启动"
 echo "🌐 访问地址: http://localhost:$PORT"
 echo "📋 查看日志: tail -f /tmp/mantis-backend.log"
-echo "🔍 查看进程: ps aux | grep 'tsx.*entry.ts'"
+echo "🔍 查看进程: ps aux | grep 'tsx/esm.*entry.ts'"
