@@ -156,6 +156,7 @@ export function EmailConfigSection() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          accountId: account.id,
           email: account.email,
           password: account.password === '***' ? undefined : account.password,
           imap: account.imap,
@@ -164,6 +165,8 @@ export function EmailConfigSection() {
       });
 
       const data = await res.json();
+      // 兼容 error 字段（服务端校验失败时返回 error 而非 message）
+      if (data.error && !data.message) data.message = data.error;
       setTestResults(prev => ({ ...prev, [account.id]: data }));
     } catch (err) {
       console.error('Failed to test account:', err);

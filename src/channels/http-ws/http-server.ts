@@ -1497,7 +1497,19 @@ export async function createHTTPServer(options: HTTPServerOptions) {
   // POST /api/email/test - 测试邮件账户连接
   app.post('/api/email/test', async (req, res) => {
     try {
-      const { email, password, imap, smtp } = req.body;
+      const { email, imap, smtp, accountId } = req.body;
+      let { password } = req.body;
+
+      // 若密码未提供（前端掩码显示 ***），从已保存配置中获取
+      if (!password && accountId) {
+        const currentConfig = loadConfig();
+        const savedAccount = (currentConfig.email?.accounts || []).find(
+          (a: EmailAccount) => a.id === accountId
+        );
+        if (savedAccount?.password) {
+          password = savedAccount.password;
+        }
+      }
 
       if (!email || !password || !imap?.host || !smtp?.host) {
         res.status(400).json({ success: false, error: 'Missing required fields' });
