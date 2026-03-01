@@ -735,6 +735,54 @@ export async function createHTTPServer(options: HTTPServerOptions) {
     }
   });
 
+  // Firecrawl API Key routes
+  app.get('/api/config/firecrawl', (_, res) => {
+    try {
+      const config = getConfig();
+      const apiKey = config.firecrawlApiKey || '';
+      res.json({ apiKey: apiKey ? '***configured***' : '', configured: !!apiKey });
+    } catch (error) {
+      console.error('[HTTPServer] Firecrawl config error:', error);
+      res.status(500).json({ error: 'Failed to get firecrawl config' });
+    }
+  });
+
+  app.put('/api/config/firecrawl', async (req, res) => {
+    try {
+      const { apiKey } = req.body;
+      if (typeof apiKey !== 'string') {
+        return res.status(400).json({ error: 'apiKey must be a string' });
+      }
+
+      const config = getConfig();
+      if (apiKey.trim()) {
+        config.firecrawlApiKey = apiKey.trim();
+        // 热加载：立即更新当前进程的环境变量
+        process.env.FIRECRAWL_API_KEY = apiKey.trim();
+      } else {
+        delete config.firecrawlApiKey;
+        delete process.env.FIRECRAWL_API_KEY;
+      }
+      await saveConfig(config);
+
+      res.json({ success: true, configured: !!config.firecrawlApiKey });
+    } catch (error) {
+      console.error('[HTTPServer] Firecrawl config update error:', error);
+      res.status(500).json({ error: 'Failed to update firecrawl config' });
+    }
+  });
+
+  // Reload config from disk
+  app.post('/api/config/reload', async (_, res) => {
+    try {
+      loadConfig();
+      res.json({ success: true, message: 'Configuration reloaded from disk' });
+    } catch (error) {
+      console.error('[HTTPServer] Config reload error:', error);
+      res.status(500).json({ error: 'Failed to reload config' });
+    }
+  });
+
   // GET /api/models - Get all models
   app.get('/api/models', (_, res) => {
     try {

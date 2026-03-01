@@ -402,6 +402,8 @@ export const ConfigSchema = z.object({
   storage: StorageSchema.optional(),
   // 邮件配置
   email: EmailConfigSchema.optional(),
+  // Firecrawl 网页搜索 API Key
+  firecrawlApiKey: z.string().optional(),
   // 可靠性和错误处理配置
   reliability: z.object({
     enabled: z.boolean().default(true),

@@ -84,8 +84,10 @@ export function ModelConfigSection() {
   async function setDefault(modelName: string) {
     try {
       setLoading(true);
-      const res = await authFetch(`/api/models/${encodeURIComponent(modelName)}/default`, {
-        method: 'POST'
+      const res = await authFetch('/api/models/default', {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: modelName }),
       });
       if (!res.ok) throw new Error('Failed to set default model');
       setDefaultModel(modelName);

@@ -3,9 +3,11 @@
 
 import { useState, useEffect } from 'react';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { authFetch, setAuthToken } from '../utils/auth';
 
 export function AuthSettingsSection() {
+  const { t } = useTranslation();
   const [authEnabled, setAuthEnabled] = useState(false);
   const [currentUsername, setCurrentUsername] = useState('');
   const [loading, setLoading] = useState(true);
@@ -55,11 +57,11 @@ export function AuthSettingsSection() {
     setSuccessMsg('');
 
     if (newPassword !== confirmPassword) {
-      setErrorMsg('两次输入的新密码不一致');
+      setErrorMsg(t('auth.passwordMismatch'));
       return;
     }
     if (newPassword.length < 6) {
-      setErrorMsg('新密码长度不能少于 6 位');
+      setErrorMsg(t('auth.passwordTooShort'));
       return;
     }
 
@@ -77,20 +79,19 @@ export function AuthSettingsSection() {
 
       const data = await res.json();
       if (res.ok) {
-        // 更新本地存储的 token，避免重新登录
         if (data.token) {
           setAuthToken(data.token);
         }
-        setSuccessMsg('凭据已更新');
+        setSuccessMsg(t('auth.success'));
         setCurrentUsername(formUsername.trim() || currentUsername);
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
       } else {
-        setErrorMsg(data.message || '更新失败，请重试');
+        setErrorMsg(data.message || t('auth.updateFailed'));
       }
     } catch {
-      setErrorMsg('网络错误，请检查连接');
+      setErrorMsg(t('auth.networkError'));
     } finally {
       setSubmitting(false);
     }
@@ -99,7 +100,7 @@ export function AuthSettingsSection() {
   if (loading) {
     return (
       <div className="flex-1 overflow-y-auto p-6">
-        <p className="text-sm text-gray-500 dark:text-gray-400">加载中...</p>
+        <p className="text-sm text-gray-500 dark:text-gray-400">{t('auth.loading')}</p>
       </div>
     );
   }
@@ -110,11 +111,13 @@ export function AuthSettingsSection() {
         <div className="max-w-md">
           <div className="flex items-center gap-3 mb-4">
             <Lock className="w-5 h-5 text-gray-400" />
-            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">访问鉴权</h3>
+            <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">{t('auth.title')}</h3>
           </div>
           <div className="rounded-lg border border-yellow-200 bg-yellow-50 dark:border-yellow-800 dark:bg-yellow-900/20 p-4">
             <p className="text-sm text-yellow-800 dark:text-yellow-300">
-              当前鉴权未启用。如需开启访问保护，请在 <code className="font-mono text-xs bg-yellow-100 dark:bg-yellow-900/40 px-1 rounded">config.json</code> 中配置：
+              {t('auth.notEnabled')}{t('auth.notEnabledHint')}{' '}
+              <code className="font-mono text-xs bg-yellow-100 dark:bg-yellow-900/40 px-1 rounded">config.json</code>
+              {' '}{t('auth.notEnabledHintSuffix')}
             </p>
             <pre className="mt-2 text-xs font-mono bg-yellow-100 dark:bg-yellow-900/40 rounded p-2 text-yellow-900 dark:text-yellow-200 overflow-x-auto">{`"server": {
   "auth": {
@@ -134,18 +137,18 @@ export function AuthSettingsSection() {
       <div className="max-w-md">
         <div className="flex items-center gap-3 mb-6">
           <Lock className="w-5 h-5 text-primary-500" />
-          <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">修改登录凭据</h3>
+          <h3 className="text-base font-medium text-gray-900 dark:text-gray-100">{t('auth.changeCredentials')}</h3>
         </div>
 
         <p className="text-sm text-gray-500 dark:text-gray-400 mb-6">
-          当前用户名：<span className="font-medium text-gray-700 dark:text-gray-300">{currentUsername}</span>
+          {t('auth.currentUsername')}<span className="font-medium text-gray-700 dark:text-gray-300">{currentUsername}</span>
         </p>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          {/* 新用户名（可选） */}
+          {/* 新用户名 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              新用户名 <span className="text-gray-400 font-normal">（留空保持不变）</span>
+              {t('auth.newUsername')} <span className="text-gray-400 font-normal">（{t('auth.newUsernamePlaceholder')}）</span>
             </label>
             <input
               type="text"
@@ -160,14 +163,14 @@ export function AuthSettingsSection() {
           {/* 当前密码 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              当前密码 <span className="text-red-500">*</span>
+              {t('auth.currentPassword')} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
                 type={showCurrent ? 'text' : 'password'}
                 value={currentPassword}
                 onChange={e => setCurrentPassword(e.target.value)}
-                placeholder="请输入当前密码"
+                placeholder={t('auth.currentPasswordPlaceholder')}
                 required
                 autoComplete="current-password"
                 className="w-full px-3 py-2 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
@@ -186,14 +189,14 @@ export function AuthSettingsSection() {
           {/* 新密码 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              新密码 <span className="text-red-500">*</span>
+              {t('auth.newPassword')} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
                 type={showNew ? 'text' : 'password'}
                 value={newPassword}
                 onChange={e => setNewPassword(e.target.value)}
-                placeholder="至少 6 位"
+                placeholder={t('auth.newPasswordPlaceholder')}
                 required
                 autoComplete="new-password"
                 className="w-full px-3 py-2 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
@@ -212,14 +215,14 @@ export function AuthSettingsSection() {
           {/* 确认新密码 */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-              确认新密码 <span className="text-red-500">*</span>
+              {t('auth.confirmPassword')} <span className="text-red-500">*</span>
             </label>
             <div className="relative">
               <input
                 type={showConfirm ? 'text' : 'password'}
                 value={confirmPassword}
                 onChange={e => setConfirmPassword(e.target.value)}
-                placeholder="再次输入新密码"
+                placeholder={t('auth.confirmPasswordPlaceholder')}
                 required
                 autoComplete="new-password"
                 className="w-full px-3 py-2 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-sm"
@@ -254,12 +257,12 @@ export function AuthSettingsSection() {
             disabled={submitting || !currentPassword || !newPassword || !confirmPassword}
             className="w-full py-2.5 px-4 bg-primary-600 hover:bg-primary-700 disabled:bg-primary-400 text-white font-medium rounded-lg transition-colors text-sm"
           >
-            {submitting ? '更新中...' : '更新凭据'}
+            {submitting ? t('auth.submitting') : t('auth.submit')}
           </button>
         </form>
 
         <p className="mt-4 text-xs text-gray-400 dark:text-gray-500">
-          密码将以 SHA-256 哈希值存储在 config.json 中，更新后旧会话 token 自动失效。
+          {t('auth.storageNote')}
         </p>
       </div>
     </div>

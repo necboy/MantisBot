@@ -94,6 +94,11 @@ export function buildIsolatedEnv(overrideConfig?: {
     if (model) {
       env.ANTHROPIC_MODEL = model;
     }
+
+    // Firecrawl API Key（config 优先，环境变量兜底已在步骤 1 处理）
+    if (config.firecrawlApiKey) {
+      env.FIRECRAWL_API_KEY = config.firecrawlApiKey;
+    }
   } catch (error) {
     console.warn('[EnvIsolation] Failed to load config:', error);
   }

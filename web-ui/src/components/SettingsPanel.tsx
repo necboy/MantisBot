@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X } from 'lucide-react';
+import { X, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SkillManagementSection } from './SkillManagementSection';
 import { ModelConfigSection } from './ModelConfigSection';
@@ -9,6 +9,7 @@ import { AllowedPathsSection } from './AllowedPathsSection';
 import { ChannelManagementSection } from './ChannelManagementSection';
 import { EmailConfigSection } from './EmailConfigSection';
 import { AuthSettingsSection } from './AuthSettingsSection';
+import { FirecrawlSettingsSection } from './FirecrawlSettingsSection';
 import { InstallSkillModal } from './InstallSkillModal';
 import { authFetch } from '../utils/auth';
 
@@ -31,9 +32,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [reloading, setReloading] = useState(false);
-  const [activeTab, setActiveTab] = useState<'skills' | 'models' | 'profiles' | 'evolutions' | 'paths' | 'channels' | 'email' | 'auth'>('skills');
+  const [activeTab, setActiveTab] = useState<'skills' | 'models' | 'profiles' | 'evolutions' | 'paths' | 'channels' | 'email' | 'auth' | 'firecrawl'>('models');
   const [activeProfile, setActiveProfile] = useState('default');
   const [installModalOpen, setInstallModalOpen] = useState(false);
+  const [reloadingConfig, setReloadingConfig] = useState(false);
 
   // Fetch skills on mount
   useEffect(() => {
@@ -88,6 +90,17 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     }
   }
 
+  async function reloadConfig() {
+    setReloadingConfig(true);
+    try {
+      await authFetch('/api/config/reload', { method: 'POST' });
+    } catch (err) {
+      console.error('Failed to reload config:', err);
+    } finally {
+      setReloadingConfig(false);
+    }
+  }
+
   if (!isOpen) return null;
 
   return (
@@ -98,27 +111,28 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
             {t('settings.title')}
           </h2>
-          <button
-            onClick={onClose}
-            className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={reloadConfig}
+              disabled={reloadingConfig}
+              title={t('settings.reloadConfig')}
+              className="flex items-center gap-1.5 px-3 py-1.5 text-xs text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${reloadingConfig ? 'animate-spin' : ''}`} />
+              {t('settings.reloadConfig')}
+            </button>
+            <button
+              onClick={onClose}
+              className="text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         {/* Tab Navigation */}
         <div className="px-6 pt-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
           <div className="flex gap-6">
-            <button
-              onClick={() => setActiveTab('skills')}
-              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
-                activeTab === 'skills'
-                  ? 'text-primary-600 border-primary-600'
-                  : 'text-gray-500 border-transparent hover:text-gray-700'
-              }`}
-            >
-              {t('settings.skillManagement')}
-            </button>
             <button
               onClick={() => setActiveTab('models')}
               className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
@@ -128,6 +142,16 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
               }`}
             >
               {t('settings.modelConfig')}
+            </button>
+            <button
+              onClick={() => setActiveTab('skills')}
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'skills'
+                  ? 'text-primary-600 border-primary-600'
+                  : 'text-gray-500 border-transparent hover:text-gray-700'
+              }`}
+            >
+              {t('settings.skillManagement')}
             </button>
             <button
               onClick={() => setActiveTab('profiles')}
@@ -187,7 +211,17 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
                   : 'text-gray-500 border-transparent hover:text-gray-700'
               }`}
             >
-              访问鉴权
+              {t('settings.auth')}
+            </button>
+            <button
+              onClick={() => setActiveTab('firecrawl')}
+              className={`pb-3 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'firecrawl'
+                  ? 'text-primary-600 border-primary-600'
+                  : 'text-gray-500 border-transparent hover:text-gray-700'
+              }`}
+            >
+              Firecrawl
             </button>
           </div>
         </div>
@@ -219,6 +253,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
           <EmailConfigSection />
         ) : activeTab === 'auth' ? (
           <AuthSettingsSection />
+        ) : activeTab === 'firecrawl' ? (
+          <FirecrawlSettingsSection />
         ) : (
           <EvolutionSection />
         )}
