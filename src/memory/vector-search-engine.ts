@@ -2,7 +2,7 @@
 // 向量搜索引擎 - 支持 sqlite-vec 扩展和 JavaScript 降级
 // 参考: MantisBot-desktop src/memory/vector-search-engine.ts
 
-import type Database from 'better-sqlite3';
+import type { NodeSqliteDatabase } from './node-sqlite-db.js';
 import { cosineSimilarity, parseEmbedding, vectorToBlob } from './internal.js';
 
 export interface VectorSearchOptions {
@@ -27,12 +27,14 @@ export interface VectorSearchResult {
  * 支持 sqlite-vec 扩展的高性能搜索和纯 JavaScript 降级搜索
  */
 export class VectorSearchEngine {
-  private db: Database.Database;
-  private vecExtensionLoaded: boolean;
+  private db: NodeSqliteDatabase;
 
-  constructor(db: Database.Database, vecExtensionLoaded: boolean) {
+  constructor(db: NodeSqliteDatabase) {
     this.db = db;
-    this.vecExtensionLoaded = vecExtensionLoaded;
+  }
+
+  private get vecExtensionLoaded(): boolean {
+    return this.db.isVectorExtensionLoaded();
   }
 
   async searchVector(

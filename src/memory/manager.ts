@@ -2,11 +2,10 @@
 
 import { getMemoryDb, initMemoryDb } from './db.js';
 import { getEmbeddingsService, type Embedding } from './embeddings.js';
-import { loadSqliteVecExtension } from './sqlite-vec.js';
 import { HybridSearchEngine, type HybridSearchResult } from './hybrid-search-engine.js';
 import { EmbeddingCache } from './embedding-cache.js';
 import { getConfig } from '../config/loader.js';
-import type Database from 'better-sqlite3';
+import type { NodeSqliteDatabase } from './node-sqlite-db.js';
 
 export interface MemoryChunk {
   id?: number;
@@ -29,7 +28,7 @@ export interface SearchOptions {
 }
 
 export class MemoryManager {
-  private db: Database.Database;
+  private db: NodeSqliteDatabase;
   private embeddings = getEmbeddingsService();
   private vecExtensionLoaded = false;
   private hybridEngine!: HybridSearchEngine;
@@ -41,39 +40,18 @@ export class MemoryManager {
     this.init();
   }
 
-  private async init(): Promise<void> {
-    const result = await loadSqliteVecExtension({ db: this.db });
-    if (result.ok) {
-      this.vecExtensionLoaded = true;
-      console.log('[Memory] sqlite-vec extension loaded:', result.extensionPath);
-      this.initVecTable();
+  private init(): void {
+    // NodeSqliteDatabase 在构造时已自动加载 sqlite-vec 扩展
+    this.vecExtensionLoaded = this.db.isVectorExtensionLoaded();
+    if (this.vecExtensionLoaded) {
+      console.log('[Memory] sqlite-vec extension is available');
     } else {
-      console.warn('[Memory] sqlite-vec unavailable, using JS fallback:', result.error);
+      console.log('[Memory] sqlite-vec extension not available, using JS fallback');
     }
 
-    this.hybridEngine = new HybridSearchEngine(this.db, this.vecExtensionLoaded, this.embeddings);
+    this.hybridEngine = new HybridSearchEngine(this.db, this.embeddings);
     this.embeddingCache = new EmbeddingCache(this.db);
     this.initialized = true;
-  }
-
-  /**
-   * 创建 sqlite-vec 虚拟表（必须在扩展加载后执行）
-   */
-  private initVecTable(): void {
-    const config = getConfig();
-    const dimension = config.memory?.vectorDimension || 1536;
-    try {
-      this.db.exec(`
-        CREATE VIRTUAL TABLE IF NOT EXISTS chunks_vec_search USING vec0(
-          id TEXT PRIMARY KEY,
-          embedding float[${dimension}]
-        )
-      `);
-      console.log('[Memory] chunks_vec_search virtual table ready, dimension:', dimension);
-    } catch (error) {
-      console.error('[Memory] Failed to create chunks_vec_search table:', error);
-      this.vecExtensionLoaded = false;
-    }
   }
 
   /**
@@ -107,7 +85,7 @@ export class MemoryManager {
     console.log('[Memory] Inserted into chunks_vec, ID:', id);
 
     // 通过 HybridSearchEngine 统一索引（FTS + 向量表）
-    await this.ensureInitialized();
+    this.ensureInitialized();
     this.hybridEngine.indexChunk({
       id,
       agentId: chunk.agentId,
@@ -127,7 +105,7 @@ export class MemoryManager {
     query: string,
     options: SearchOptions = {}
   ): Promise<MemoryChunk[]> {
-    await this.ensureInitialized();
+    this.ensureInitialized();
 
     const {
       limit = 5,
@@ -183,7 +161,7 @@ export class MemoryManager {
    * 重建搜索索引
    */
   async rebuildIndexes(): Promise<{ ftsRebuild: { rebuilt: number; errors: number } }> {
-    await this.ensureInitialized();
+    this.ensureInitialized();
     return this.hybridEngine.rebuildIndexes();
   }
 
@@ -199,9 +177,9 @@ export class MemoryManager {
     };
   }
 
-  private async ensureInitialized(): Promise<void> {
+  private ensureInitialized(): void {
     if (!this.initialized) {
-      await this.init();
+      this.init();
     }
   }
 

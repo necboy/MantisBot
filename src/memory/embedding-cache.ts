@@ -2,7 +2,7 @@
 // Embedding 缓存管理器 - 避免重复计算相同的 embedding
 // 参考: MantisBot-desktop src/memory/embedding-cache.ts
 
-import type Database from 'better-sqlite3';
+import type { NodeSqliteDatabase } from './node-sqlite-db.js';
 import * as crypto from 'crypto';
 
 export interface EmbeddingCacheOptions {
@@ -15,12 +15,12 @@ export interface EmbeddingCacheOptions {
  * 实现三级缓存策略：内存 → SQLite → 重新计算
  */
 export class EmbeddingCache {
-  private db: Database.Database;
+  private db: NodeSqliteDatabase;
   private memoryCache = new Map<string, { embedding: number[]; timestamp: number }>();
   private maxMemoryCacheSize: number;
   private cacheExpiryMs: number;
 
-  constructor(db: Database.Database, options: EmbeddingCacheOptions = {}) {
+  constructor(db: NodeSqliteDatabase, options: EmbeddingCacheOptions = {}) {
     this.db = db;
     this.maxMemoryCacheSize = options.maxMemoryCacheSize ?? 1000;
     this.cacheExpiryMs = options.cacheExpiryMs ?? 24 * 60 * 60 * 1000;
@@ -129,7 +129,7 @@ export class EmbeddingCache {
     try {
       const result = this.db.prepare('DELETE FROM embedding_cache WHERE created_at < ?')
         .run(Date.now() - this.cacheExpiryMs);
-      return result.changes;
+      return Number(result.changes);
     } catch {
       return 0;
     }

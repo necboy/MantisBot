@@ -2,7 +2,7 @@
 // 混合搜索引擎 - 结合向量搜索和全文搜索
 // 参考: MantisBot-desktop src/memory/hybrid-search-engine.ts
 
-import type Database from 'better-sqlite3';
+import type { NodeSqliteDatabase } from './node-sqlite-db.js';
 import { VectorSearchEngine, type VectorSearchResult } from './vector-search-engine.js';
 import { FullTextSearchEngine, type TextSearchResult } from './full-text-search-engine.js';
 import type { EmbeddingsService } from './embeddings.js';
@@ -43,11 +43,10 @@ export class HybridSearchEngine {
   private readonly DEFAULT_TEXT_WEIGHT = 0.3;
 
   constructor(
-    db: Database.Database,
-    vecExtensionLoaded: boolean,
+    db: NodeSqliteDatabase,
     embeddings: EmbeddingsService
   ) {
-    this.vectorEngine = new VectorSearchEngine(db, vecExtensionLoaded);
+    this.vectorEngine = new VectorSearchEngine(db);
     this.textEngine = new FullTextSearchEngine(db);
     this.embeddings = embeddings;
   }

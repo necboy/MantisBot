@@ -2,7 +2,7 @@
 // 全文搜索引擎 - 基于 SQLite FTS5
 // 参考: MantisBot-desktop src/memory/full-text-search-engine.ts
 
-import type Database from 'better-sqlite3';
+import type { NodeSqliteDatabase } from './node-sqlite-db.js';
 
 export interface TextSearchOptions {
   agentId?: string;
@@ -28,9 +28,9 @@ export interface TextSearchResult {
  * 支持中英文混合查询
  */
 export class FullTextSearchEngine {
-  private db: Database.Database;
+  private db: NodeSqliteDatabase;
 
-  constructor(db: Database.Database) {
+  constructor(db: NodeSqliteDatabase) {
     this.db = db;
   }
 
