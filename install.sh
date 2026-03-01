@@ -29,6 +29,11 @@ BACKEND_PORT=8118
 FRONTEND_PORT=3000
 PROJECT_DIR=""
 
+# ── 安装选项 / Install Options ────────────────────────────────
+MIRROR=false
+SKIP_BUILD=false
+INSTALL_DIR=""
+
 # ── 工具函数 / Helpers ────────────────────────────────────────
 print_banner() {
   echo -e "${CYAN}"
@@ -48,6 +53,42 @@ hr()    { echo -e "   ${DIM}─────────────────�
 
 cmd_exists() { command -v "$1" >/dev/null 2>&1; }
 
+# ── 帮助信息 / Info ───────────────────────────────────────────
+show_info() {
+  echo -e "   ${BOLD}What this script does:${NC}"
+  echo -e "   ${DIM}  1.  Check prerequisites  (Node.js ${MIN_NODE_MAJOR}.${MIN_NODE_MINOR}+, npm, git)${NC}"
+  echo -e "   ${DIM}  2.  Clone or locate the MantisBot project${NC}"
+  echo -e "   ${DIM}  3.  Install npm dependencies${NC}"
+  echo -e "   ${DIM}  4.  Initialize configuration${NC}"
+  echo -e "   ${DIM}  5.  Build backend + frontend${NC}"
+  echo -e "   ${DIM}  6.  Launch  (choose dev / prod / background)${NC}"
+  echo ""
+  hr
+  echo -e "   ${BOLD}Options:${NC}"
+  echo -e "   ${GREEN}  --mirror${NC}              Use npmmirror CDN  (faster in China)"
+  echo -e "   ${GREEN}  --skip-build${NC}          Skip the TypeScript + frontend build step"
+  echo -e "   ${GREEN}  --install-dir <path>${NC}  Custom install directory  (default: ./MantisBot)"
+  hr
+}
+
+confirm_continue() {
+  echo ""
+  if [[ -e /dev/tty ]]; then
+    read -rp "   Press Enter to begin installation, or Ctrl+C to cancel... " </dev/tty 2>/dev/null || true
+  fi
+  echo ""
+}
+
+# 错误退出前暂停，让用户看清提示（仅交互式终端下生效）
+pause_exit() {
+  local code="${1:-1}"
+  echo ""
+  if [[ -t 2 ]]; then
+    read -rp "   按回车键退出 / Press Enter to exit..." </dev/tty 2>/dev/null || true
+  fi
+  exit "$code"
+}
+
 node_major() {
   node --version 2>/dev/null | sed 's/v//' | cut -d. -f1
 }
@@ -64,6 +105,7 @@ check_prerequisites() {
 
   local missing=()
   local IS_MAC=false
+  local NODE_NEEDS_UPGRADE=false
   [[ "$(uname)" == "Darwin" ]] && IS_MAC=true
 
   # ── Node.js ────────────────────────────────────────────────
@@ -75,11 +117,12 @@ check_prerequisites() {
        [[ "$major" -eq "$MIN_NODE_MAJOR" && "$minor" -ge "$MIN_NODE_MINOR" ]]; then
       ok "Node.js $(node --version)"
     else
-      err "Node.js 版本过低  (当前 v${major}.${minor}, 需要 v${MIN_NODE_MAJOR}.${MIN_NODE_MINOR}+)"
+      err "Node.js version too low  (current: v${major}.${minor}, required: v${MIN_NODE_MAJOR}.${MIN_NODE_MINOR}+)"
       missing+=("nodejs")
+      NODE_NEEDS_UPGRADE=true
     fi
   else
-    err "未找到 Node.js"
+    err "Node.js not found"
     missing+=("nodejs")
   fi
 
@@ -102,27 +145,40 @@ check_prerequisites() {
   # ── 缺失依赖提示 ────────────────────────────────────────────
   if [[ ${#missing[@]} -gt 0 ]]; then
     echo ""
-    warn "检测到缺失依赖，安装方法如下："
+    warn "Missing dependencies detected. How to fix:"
     hr
-    if $IS_MAC; then
-      # macOS — Homebrew
-      if ! cmd_exists brew; then
-        info "首先安装 Homebrew:  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+    if [[ " ${missing[*]} " =~ " nodejs " ]]; then
+      if $NODE_NEEDS_UPGRADE; then
+        info "Node.js v${MIN_NODE_MAJOR}.${MIN_NODE_MINOR}+ required. Upgrade options:"
+      else
+        info "Node.js v${MIN_NODE_MAJOR}.${MIN_NODE_MINOR}+ not found. Install options:"
       fi
-      [[ " ${missing[*]} " =~ " nodejs " ]] && info "安装 Node.js:  brew install node@22"
-      [[ " ${missing[*]} " =~ " git "    ]] && info "安装 git:      brew install git"
-    else
-      # Linux
-      [[ " ${missing[*]} " =~ " nodejs " ]] && {
-        info "Ubuntu/Debian:  curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt-get install -y nodejs"
-        info "CentOS/RHEL:    curl -fsSL https://rpm.nodesource.com/setup_22.x | sudo bash - && sudo yum install -y nodejs"
-      }
-      [[ " ${missing[*]} " =~ " git " ]] && info "安装 git:  sudo apt-get install -y git"
+      if $IS_MAC; then
+        if ! cmd_exists brew; then
+          info "  brew (install first):  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+        fi
+        if $NODE_NEEDS_UPGRADE; then
+          info "  brew:   brew upgrade node  (or: brew install node@${MIN_NODE_MAJOR})"
+        else
+          info "  brew:   brew install node@${MIN_NODE_MAJOR}"
+        fi
+      else
+        info "  Ubuntu/Debian:  curl -fsSL https://deb.nodesource.com/setup_${MIN_NODE_MAJOR}.x | sudo -E bash - && sudo apt-get install -y nodejs"
+        info "  CentOS/RHEL:    curl -fsSL https://rpm.nodesource.com/setup_${MIN_NODE_MAJOR}.x | sudo bash - && sudo yum install -y nodejs"
+      fi
+      info "  nvm:    nvm install ${MIN_NODE_MAJOR} && nvm use ${MIN_NODE_MAJOR}"
+      info "  web:    https://nodejs.org/en/download  (select LTS)"
     fi
-    info "通用方案 (nvm):  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/HEAD/install.sh | bash && nvm install 22"
+    if [[ " ${missing[*]} " =~ " git " ]]; then
+      if $IS_MAC; then
+        info "  git:    brew install git"
+      else
+        info "  git:    sudo apt-get install -y git"
+      fi
+    fi
     echo ""
-    err "请安装上述依赖后重新运行脚本"
-    exit 1
+    err "Please install the above dependencies and re-run this script"
+    pause_exit 1
   fi
 }
 
@@ -151,13 +207,12 @@ locate_project() {
   if ! cmd_exists git; then
     err "需要 git 来下载项目"
     info "请手动下载 ZIP：$REPO_URL/archive/refs/heads/main.zip"
-    exit 1
+    pause_exit 1
   fi
 
   echo ""
-  local default_dir
-  default_dir="$(pwd)/MantisBot"
-  read -rp "   安装目录 (回车使用默认: $default_dir): " input_dir
+  local default_dir="${INSTALL_DIR:-$(pwd)/MantisBot}"
+  read -rp "   Install directory (Enter for default: $default_dir): " input_dir
   local target="${input_dir:-$default_dir}"
 
   if [[ -d "$target" ]]; then
@@ -174,7 +229,7 @@ locate_project() {
     cd "$PROJECT_DIR"
   else
     err "克隆失败，请检查网络或手动下载"
-    exit 1
+    pause_exit 1
   fi
 }
 
@@ -186,7 +241,13 @@ install_deps() {
   info "首次安装可能需要 2~5 分钟，请耐心等待..."
   echo ""
 
-  if npm install; then
+  local npm_args=(install)
+  if $MIRROR; then
+    npm_args+=(--registry https://registry.npmmirror.com)
+    info "Using npmmirror registry (faster in China)"
+  fi
+
+  if npm "${npm_args[@]}"; then
     echo ""
     ok "依赖安装完成"
   else
@@ -195,7 +256,7 @@ install_deps() {
     info "1. 国内镜像加速：npm install --registry https://registry.npmmirror.com"
     info "2. 清除缓存后重试：npm cache clean --force && npm install"
     info "3. 使用代理：export https_proxy=http://127.0.0.1:7890 && npm install"
-    exit 1
+    pause_exit 1
   fi
 }
 
@@ -250,6 +311,11 @@ setup_config() {
 # STEP 5: 编译项目
 # ─────────────────────────────────────────────────���──────────
 build_project() {
+  if $SKIP_BUILD; then
+    step "Skipping build (--skip-build)"
+    return
+  fi
+
   step "编译项目 / Building Project"
   info "编译 TypeScript 后端 + Vite 前端..."
   echo ""
@@ -260,7 +326,7 @@ build_project() {
   else
     echo ""
     err "编译失败，请检查错误信息"
-    exit 1
+    pause_exit 1
   fi
 }
 
@@ -330,7 +396,20 @@ start_project() {
 # MAIN
 # ────────────────────────────────────────────────────────────
 main() {
+  # ── 解析命令行参数 ────────────────────────────────────────────
+  while [[ $# -gt 0 ]]; do
+    case "$1" in
+      --mirror)       MIRROR=true; shift ;;
+      --skip-build)   SKIP_BUILD=true; shift ;;
+      --install-dir)  INSTALL_DIR="${2:-}"; shift 2 ;;
+      --help|-h)      print_banner; show_info; exit 0 ;;
+      *)              warn "Unknown option: $1"; shift ;;
+    esac
+  done
+
   print_banner
+  show_info
+  confirm_continue
 
   check_prerequisites
   locate_project

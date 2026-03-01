@@ -39,7 +39,6 @@ function Write-Banner {
     Write-Host ""
     Write-Host "  +--------------------------------------------------+" -ForegroundColor Cyan
     Write-Host "  |  MantisBot  Intelligent Installer  v1.0         |" -ForegroundColor Cyan
-    Write-Host "  |  MantisBot  zhieng anzhuang jiaoben             |" -ForegroundColor Cyan
     Write-Host "  +--------------------------------------------------+" -ForegroundColor Cyan
     Write-Host ""
 }
@@ -69,6 +68,13 @@ function Write-Hr {
     Write-Host "     --------------------------------------------------" -ForegroundColor DarkGray
 }
 
+# 错误退出前暂停，避免窗口闪退
+function Exit-WithPause([int]$code = 1) {
+    Write-Host ""
+    Read-Host "     Press Enter to exit" | Out-Null
+    exit $code
+}
+
 function Test-Cmd([string]$cmd) {
     return [bool](Get-Command $cmd -ErrorAction SilentlyContinue)
 }
@@ -94,6 +100,32 @@ function Get-NodeMinor {
 }
 
 # ------------------------------------------------------------
+# Show usage info and wait for confirmation
+# ------------------------------------------------------------
+function Show-Info {
+    Write-Host "     What this script does:" -ForegroundColor White
+    Write-Host "       1.  Check prerequisites  (Node.js $MIN_NODE_MAJOR.$MIN_NODE_MINOR+, npm, git)" -ForegroundColor DarkGray
+    Write-Host "       2.  Clone or locate the MantisBot project" -ForegroundColor DarkGray
+    Write-Host "       3.  Install npm dependencies" -ForegroundColor DarkGray
+    Write-Host "       4.  Initialize configuration" -ForegroundColor DarkGray
+    Write-Host "       5.  Build backend + frontend" -ForegroundColor DarkGray
+    Write-Host "       6.  Launch  (choose dev / prod / split mode)" -ForegroundColor DarkGray
+    Write-Host ""
+    Write-Hr
+    Write-Host "     Parameters:" -ForegroundColor White
+    Write-Host "       -Mirror              " -NoNewline -ForegroundColor Green
+    Write-Host "Use npmmirror CDN  (faster in China)" -ForegroundColor DarkGray
+    Write-Host "       -SkipBuild           " -NoNewline -ForegroundColor Green
+    Write-Host "Skip the TypeScript + frontend build step" -ForegroundColor DarkGray
+    Write-Host "       -InstallDir <path>   " -NoNewline -ForegroundColor Green
+    Write-Host "Custom install path  (default: .\MantisBot)" -ForegroundColor DarkGray
+    Write-Hr
+    Write-Host ""
+    Read-Host "     Press Enter to begin installation, or Ctrl+C to cancel" | Out-Null
+    Write-Host ""
+}
+
+# ------------------------------------------------------------
 # STEP 0: Fix execution policy if needed
 # 修复 PowerShell 执行策略
 # ------------------------------------------------------------
@@ -107,8 +139,7 @@ function Assert-ExecutionPolicy {
         }
         catch {
             Write-Err "Cannot update execution policy. Please run as Administrator:"
-            Write-Info "Set-ExecutionPolicy -Scope CurrentUser RemoteSigned"
-            exit 1
+            Exit-WithPause 1
         }
     }
 }
@@ -118,9 +149,10 @@ function Assert-ExecutionPolicy {
 # 检查系统依赖
 # ------------------------------------------------------------
 function Check-Prerequisites {
-    Write-Step "Checking Prerequisites / zhenjia xitong yilai"
+    Write-Step "Checking Prerequisites"
 
-    $missing = @()
+    $missing          = @()
+    $nodeNeedsUpgrade = $false
 
     # Node.js
     if (Test-Cmd "node") {
@@ -131,7 +163,8 @@ function Check-Prerequisites {
         }
         else {
             Write-Err "Node.js version too low (current: v$ver.$minor, required: v$MIN_NODE_MAJOR.$MIN_NODE_MINOR+)"
-            $missing += "nodejs"
+            $missing          += "nodejs"
+            $nodeNeedsUpgrade  = $true
         }
     }
     else {
@@ -164,9 +197,18 @@ function Check-Prerequisites {
         Write-Hr
 
         if ($missing -contains "nodejs") {
-            Write-Info "Option 1 (winget):  winget install OpenJS.NodeJS.LTS"
-            Write-Info "Option 2 (web):     https://nodejs.org/en/download"
-            Write-Info "Option 3 (nvm):     https://github.com/coreybutler/nvm-windows/releases"
+            if ($nodeNeedsUpgrade) {
+                Write-Info "Node.js v$MIN_NODE_MAJOR.$MIN_NODE_MINOR+ required. Upgrade options:"
+                Write-Info "  winget :  winget upgrade OpenJS.NodeJS.LTS"
+                Write-Info "  nvm    :  nvm install $MIN_NODE_MAJOR && nvm use $MIN_NODE_MAJOR"
+                Write-Info "  web    :  https://nodejs.org/en/download  (select LTS)"
+            }
+            else {
+                Write-Info "Node.js v$MIN_NODE_MAJOR.$MIN_NODE_MINOR+ not found. Install options:"
+                Write-Info "  winget :  winget install OpenJS.NodeJS.LTS"
+                Write-Info "  nvm    :  https://github.com/coreybutler/nvm-windows/releases"
+                Write-Info "  web    :  https://nodejs.org/en/download  (select LTS)"
+            }
         }
         if ($missing -contains "git") {
             Write-Info "Install git:  winget install Git.Git"
@@ -175,7 +217,7 @@ function Check-Prerequisites {
 
         Write-Host ""
         Write-Err "Please install the above and re-run this script"
-        exit 1
+        Exit-WithPause 1
     }
 }
 
@@ -184,7 +226,7 @@ function Check-Prerequisites {
 # 定位/下载项目
 # ------------------------------------------------------------
 function Locate-Project {
-    Write-Step "Locating Project / dingwei xiangmu mulu"
+    Write-Step "Locating Project"
 
     # Already inside project directory / 已在项目目录内
     if ((Test-Path "package.json") -and (Select-String -Path "package.json" -Pattern '"name": "mantis-bot"' -Quiet)) {
@@ -206,7 +248,7 @@ function Locate-Project {
         Write-Err "git is required to download the project"
         Write-Info "Download ZIP: https://github.com/necboy/MantisBot/archive/refs/heads/main.zip"
         Write-Info "Unzip into a folder and re-run this script from inside it"
-        exit 1
+        Exit-WithPause 1
     }
 
     $currentPath = (Get-Location).Path
@@ -243,7 +285,7 @@ function Locate-Project {
     else {
         Write-Err "Clone failed. Check network or download manually:"
         Write-Info "ZIP: https://github.com/necboy/MantisBot/archive/refs/heads/main.zip"
-        exit 1
+        Exit-WithPause 1
     }
 }
 
@@ -252,7 +294,7 @@ function Locate-Project {
 # 安装 npm 依赖
 # ------------------------------------------------------------
 function Install-Deps {
-    Write-Step "Installing Dependencies / anzhuang yilai bao"
+    Write-Step "Installing Dependencies"
     Write-Info "First install may take 2-5 minutes, please wait..."
     Write-Host ""
 
@@ -275,7 +317,7 @@ function Install-Deps {
         Write-Info "1. China mirror:  .\install.ps1 -Mirror"
         Write-Info "2. Clear cache:   npm cache clean --force"
         Write-Info "3. Set proxy:     `$env:HTTPS_PROXY='http://127.0.0.1:7890'"
-        exit 1
+        Exit-WithPause 1
     }
 }
 
@@ -284,8 +326,7 @@ function Install-Deps {
 # 初始化配置
 # ------------------------------------------------------------
 function Setup-Config {
-    Write-Step "Configuration Setup / peizhiqr chushihua"
-
+    Write-Step "Configuration Setup"
     $cfgFile = "config\config.json"
     $tplFile = "config\config.example.json"
 
@@ -327,7 +368,6 @@ function Setup-Config {
 
 # ------------------------------------------------------------
 # STEP 5: Build project
-# 编译项目
 # ------------------------------------------------------------
 function Build-MantisBot {
     if ($SkipBuild) {
@@ -335,7 +375,7 @@ function Build-MantisBot {
         return
     }
 
-    Write-Step "Building Project / bianyiqr xiangmu"
+    Write-Step "Building Project"
     Write-Info "Compiling TypeScript backend + Vite frontend..."
     Write-Host ""
 
@@ -348,7 +388,7 @@ function Build-MantisBot {
     else {
         Write-Host ""
         Write-Err "Build failed - check output above for errors"
-        exit 1
+        Exit-WithPause 1
     }
 }
 
@@ -357,7 +397,7 @@ function Build-MantisBot {
 # 启动
 # ------------------------------------------------------------
 function Start-MantisBot {
-    Write-Step "Launch / qidong MantisBot"
+    Write-Step "Launch / Starting MantisBot"
 
     Write-Host ""
     Write-Host "     Choose start mode:" -ForegroundColor White
@@ -425,6 +465,7 @@ function Start-MantisBot {
 # ------------------------------------------------------------
 function Main {
     Write-Banner
+    Show-Info
     Assert-ExecutionPolicy
     Check-Prerequisites
     Locate-Project
