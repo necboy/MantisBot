@@ -8,6 +8,7 @@ import { editTool } from './edit.js';
 import { sendFileTool } from './send-file.js';
 import { browserTools } from './browser.js';
 import { memorySearchTool } from './memory-search.js';
+import { rememberTool } from './remember.js';
 import { firecrawlTool } from './firecrawl.js';
 
 const builtInTools: Record<string, Tool> = {
@@ -19,6 +20,7 @@ const builtInTools: Record<string, Tool> = {
   edit: editTool,
   send_file: sendFileTool,
   memory_search: memorySearchTool,
+  remember: rememberTool,
   firecrawl: firecrawlTool
 };
 
@@ -26,7 +28,7 @@ const builtInTools: Record<string, Tool> = {
 const browserToolsArray: Tool[] = browserTools;
 
 // 核心工具（总是可用）
-const CORE_TOOLS = ['read_skill', 'exec', 'read', 'write', 'edit', 'send_file', 'memory_search', 'firecrawl'];
+const CORE_TOOLS = ['read_skill', 'exec', 'read', 'write', 'edit', 'send_file', 'memory_search', 'remember', 'firecrawl'];
 
 export class ToolRegistry {
   private tools: Map<string, Tool> = new Map();

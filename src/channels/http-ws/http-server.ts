@@ -40,6 +40,7 @@ import { channelDefinitions, getChannelDefinition } from '../definitions/index.j
 import { hotStartChannel, hotStopChannel } from '../initializer.js';
 import { CommandRegistry, registerHelpCommand } from '../../auto-reply/commands/registry.js';
 import { registerClearCommand } from '../../auto-reply/commands/clear.js';
+import { registerMemoryCommand } from '../../auto-reply/commands/memory.js';
 import { registerStatusCommand } from '../../auto-reply/commands/status.js';
 import { registerWhoamiCommand } from '../../auto-reply/commands/whoami.js';
 import { registerModelCommand } from '../../auto-reply/commands/model.js';
@@ -141,6 +142,7 @@ export async function createHTTPServer(options: HTTPServerOptions) {
   registerStatusCommand(commandRegistry, options.sessionManager);
   registerWhoamiCommand(commandRegistry);
   registerModelCommand(commandRegistry);
+  registerMemoryCommand(commandRegistry);
 
   // Plugin routes (if pluginLoader is provided)
   if (options.pluginLoader) {
@@ -248,7 +250,8 @@ export async function createHTTPServer(options: HTTPServerOptions) {
       model: s.model,
       createdAt: s.createdAt,
       updatedAt: s.updatedAt,
-      messageCount: s.messages.length
+      messageCount: s.messages.length,
+      starred: s.starred,
     })));
   });
 
@@ -264,7 +267,7 @@ export async function createHTTPServer(options: HTTPServerOptions) {
   app.put('/api/sessions/:id', (req, res) => {
     try {
       const { id } = req.params;
-      const { approvalMode, name, model } = req.body;
+      const { approvalMode, name, model, starred } = req.body;
 
       const session = options.sessionManager.getSession(id);
       if (!session) {
@@ -289,6 +292,9 @@ export async function createHTTPServer(options: HTTPServerOptions) {
       }
       if (model) {
         session.model = model;
+      }
+      if (typeof starred === 'boolean') {
+        session.starred = starred;
       }
 
       options.sessionManager.updateSession(session);
@@ -651,24 +657,6 @@ export async function createHTTPServer(options: HTTPServerOptions) {
           }
 
           options.sessionManager.updateSession(session);
-
-          // 后台异步存储记忆（不阻塞响应）
-          if (options.memoryManager) {
-            options.memoryManager.add({
-              agentId: 'default',
-              sessionKey: chatId,
-              content: `用户: ${message}`,
-              source: 'user',
-              createdAt: Date.now(),
-            }).catch(err => console.error('[HTTPServer] 记忆存储失败 (用户消息):', err));
-            options.memoryManager.add({
-              agentId: 'default',
-              sessionKey: chatId,
-              content: `助手: ${fullContent}`,
-              source: 'assistant',
-              createdAt: Date.now(),
-            }).catch(err => console.error('[HTTPServer] 记忆存储失败 (助手消息):', err));
-          }
 
           // ⚡ 发送 done 事件（标题已在用户提交消息时提前生成）
           const doneData = {
@@ -1155,7 +1143,8 @@ export async function createHTTPServer(options: HTTPServerOptions) {
         { name: 'clear', description: '清空当前会话消息', plugin: 'system' },
         { name: 'status', description: '显示当前状态', plugin: 'system' },
         { name: 'whoami', description: '显示当前用户信息', plugin: 'system' },
-        { name: 'model', description: '查看或切换模型', plugin: 'system' }
+        { name: 'model', description: '查看或切换模型', plugin: 'system' },
+        { name: 'memory', description: '强制保存内容到长期记忆，用法：/memory <内容>', plugin: 'system' }
       );
 
       res.json({ commands });

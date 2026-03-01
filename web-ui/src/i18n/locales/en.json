@@ -26,6 +26,14 @@
   "notification": {
     "cronNotification": "Cron Notifications"
   },
+  "sidebar": {
+    "starredChats": "Starred",
+    "selectMode": "Select",
+    "exitSelectMode": "Done",
+    "selectAll": "All",
+    "deselectAll": "None",
+    "deleteSelected": "Delete ({{count}})"
+  },
   "file": {
     "openInCanvas": "Open in Canvas",
     "download": "Download",
@@ -170,7 +178,8 @@
     "selectLanguage": "Select Language"
   },
   "confirm": {
-    "deleteSession": "Are you sure you want to delete this conversation?"
+    "deleteSession": "Are you sure you want to delete this conversation?",
+    "bulkDeleteSessions": "Delete {{count}} conversations? This cannot be undone."
   },
   "error": {
     "sendFailed": "Failed to send message, please try again",

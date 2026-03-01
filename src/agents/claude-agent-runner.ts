@@ -101,6 +101,7 @@ const DESTRUCTIVE_BASH_PATTERNS: RegExp[] = [
 // 需要通过 MCP 注入的工具（SDK 没有的）
 const MCP_ONLY_TOOLS = new Set([
   'memory_search',
+  'remember',
   'read_skill',
   'send_file',
   'document',
@@ -554,6 +555,9 @@ export class ClaudeAgentRunner extends EventEmitter {
     }
     // 将当前工作目录注入系统提示词，确保 Claude 始终感知到正确路径
     systemPrompt = `${systemPrompt}\n\n## 当前工作目录\n${currentCwd}`;
+
+    // 注入记忆工具使用指引
+    systemPrompt = `${systemPrompt}\n\n## 记忆工具\n你有一个 \`remember\` 工具，仅在学到对未来对话有价值的信息时调用：\n- 用户偏好（编码风格、语言偏好、沟通方式）\n- 项目关键事实（技术栈、架构决策、环境信息）\n- 重要决策（用户做出的选择，如"暂不引入 Redis"）\n- 个人上下文（姓名、时区、角色）\n\n不要调用 remember 记录：普通问答、解释说明、调试步骤、或仅与当前任务相关的临时信息。`;
 
     // 加载 Skills 提示词（如果提供了 skillsLoader）
     // 使用 enabledSkills 配置，只启用配置中的 skills

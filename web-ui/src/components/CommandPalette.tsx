@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Command } from 'lucide-react';
+import { authFetch } from '../utils/auth';
 
 interface Command {
   name: string;
@@ -22,7 +23,7 @@ export function CommandPalette({ onSelect, onClose }: CommandPaletteProps) {
 
   useEffect(() => {
     // 获取命令列表
-    fetch('/api/commands')
+    authFetch('/api/commands')
       .then(res => res.json())
       .then(data => {
         setCommands(data.commands || []);

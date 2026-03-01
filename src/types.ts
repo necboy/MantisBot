@@ -35,6 +35,8 @@ export interface Session {
   claudeSessionId?: string;
   // 审批模式：auto=自动批准所有, ask=每次询问, dangerous=仅危险操作询问
   approvalMode?: ApprovalMode;
+  // 星标置顶：标记为重要会话，在侧边栏顶部分组显示
+  starred?: boolean;
 }
 
 // LLM types

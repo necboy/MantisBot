@@ -26,6 +26,14 @@
   "notification": {
     "cronNotification": "定时任务通知"
   },
+  "sidebar": {
+    "starredChats": "星标对话",
+    "selectMode": "选择",
+    "exitSelectMode": "完成",
+    "selectAll": "全选",
+    "deselectAll": "取消全选",
+    "deleteSelected": "删除已选({{count}})"
+  },
   "file": {
     "openInCanvas": "在画布中打开",
     "download": "下载文件",
@@ -170,7 +178,8 @@
     "selectLanguage": "选择语言"
   },
   "confirm": {
-    "deleteSession": "确定要删除这个对话吗？"
+    "deleteSession": "确定要删除这个对话吗？",
+    "bulkDeleteSessions": "确定要删除这 {{count}} 个对话吗？此操作不可恢复。"
   },
   "error": {
     "sendFailed": "发送消息失败，请重试",

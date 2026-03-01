@@ -100,25 +100,6 @@ ${content}
       // Run agent
       const result = await this.agentRunner.run(prompt, history);
 
-      // 后台存储记忆（不阻塞响应）
-      // 用户消息存储
-      this.memoryManager.add({
-        agentId: 'default',
-        sessionKey: sessionId,
-        content: `用户: ${content}`,
-        source: 'user',
-        createdAt: Date.now(),
-      }).catch(err => console.error('[Dispatch] 记忆存储失败 (用户消息):', err));
-
-      // 助手消息存储
-      this.memoryManager.add({
-        agentId: 'default',
-        sessionKey: sessionId,
-        content: `助手: ${result.response}`,
-        source: 'assistant',
-        createdAt: Date.now(),
-      }).catch(err => console.error('[Dispatch] 记忆存储失败 (助手消息):', err));
-
       // Add messages to session
       this.sessionManager.addMessage(sessionId, {
         role: 'user',
