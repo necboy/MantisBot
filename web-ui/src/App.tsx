@@ -1281,6 +1281,23 @@ function App() {
         signal: abortController.signal
       });
 
+      // 非 2xx 响应：立即提取错误信息显示在助手气泡中，不走 SSE 解析
+      if (!res.ok) {
+        let errMsg = t('error.sendFailed');
+        try {
+          const errData = await res.json();
+          if (errData.messageKey) {
+            errMsg = t(errData.messageKey, errData.messageArgs || {}) as string;
+          } else if (errData.message) {
+            errMsg = errData.message;
+          }
+        } catch { /* 忽略解析失败 */ }
+        setMessages(prev => prev.map(msg =>
+          msg.id === assistantMsgId ? { ...msg, content: errMsg } : msg
+        ));
+        return;
+      }
+
       const reader = res.body?.getReader();
       const decoder = new TextDecoder();
 

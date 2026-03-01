@@ -115,7 +115,8 @@
     "timeout": "Request timeout, please try again later",
     "setWorkDirFailed": "Failed to set working directory",
     "addPermissionFailed": "Failed to add directory permission",
-    "getPermissionFailed": "Failed to get directory permissions"
+    "getPermissionFailed": "Failed to get directory permissions",
+    "missingApiKey": "Model \"{{model}}\" has no API key configured. Please go to Settings → Model Config to add it and try again."
   },
   "success": {
     "permissionAdded": "Directory permission added successfully, working directory changed"

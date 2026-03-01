@@ -446,7 +446,21 @@ export async function createHTTPServer(options: HTTPServerOptions) {
           return;
         }
       }
-      // ─────────────────────────────────────────────────���────────────
+      // ─────────────────────────────────────────────────────────────
+
+      // Validate API key for the selected model — fail fast before any LLM call
+      const resolvedModelName = session.model || config.defaultModel || config.models[0]?.name;
+      const resolvedModelConfig = (config.models as any[]).find((m: any) => m.name === resolvedModelName);
+      if (resolvedModelConfig && !resolvedModelConfig.apiKey?.trim()) {
+        res.status(422).json({
+          error: 'missing_api_key',
+          model: resolvedModelName,
+          messageKey: 'error.missingApiKey',
+          messageArgs: { model: resolvedModelName },
+          message: `模型「${resolvedModelName}」未配置 API Key，请前往「设置 → 模型配置」填写后重试。`
+        });
+        return;
+      }
 
       // 复用已有的 Agent Runner 实例（保持会话上下文）
       // 如果是已存在的 session，尝试复用之前的 runner

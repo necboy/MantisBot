@@ -115,7 +115,8 @@
     "timeout": "请求超时，请稍后重试",
     "setWorkDirFailed": "设置工作目录失败",
     "addPermissionFailed": "添加目录权限失败",
-    "getPermissionFailed": "获取目录权限失败"
+    "getPermissionFailed": "获取目录权限失败",
+    "missingApiKey": "模型「{{model}}」未配置 API Key，请前往「设置 → 模型配置」填写后重试。"
   },
   "success": {
     "permissionAdded": "目录权限添加成功，工作目录已切换"
