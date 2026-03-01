@@ -32,6 +32,7 @@ import { RetryManager } from './reliability/retry-manager.js';
 // import { RetryService } from './reliability/retry-service.js';
 // import { ErrorMetrics } from './reliability/error-metrics.js';
 import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 export async function main(): Promise<void> {
   console.log('[MantisBot] Starting...');
@@ -283,6 +284,7 @@ export async function main(): Promise<void> {
 }
 
 // Run if called directly
-if (import.meta.url === `file://${process.argv[1]}`) {
+const __filename = fileURLToPath(import.meta.url);
+if (path.resolve(__filename) === path.resolve(process.argv[1])) {
   main().catch(console.error);
 }

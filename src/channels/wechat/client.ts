@@ -2,13 +2,6 @@ import { createRequire } from 'module';
 import type { ChannelMessage } from '../channel.interface.js';
 
 const require = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const wechaty = require('wechaty') as any;
-const wechatyPuppetPadlocal = require('wechaty-puppet-padlocal') as any;
-
-const WechatyBuilder = wechaty.WechatyBuilder;
-const ScanStatus = wechaty.ScanStatus;
-const PuppetPadlocal = wechatyPuppetPadlocal.PuppetPadlocal;
 
 interface WeChatClientOptions {
   token: string;
@@ -23,6 +16,15 @@ export class WeChatClient {
 
   constructor(options: WeChatClientOptions) {
     this.onMessage = options.onMessage;
+
+    // Lazy-load wechaty to avoid crashing on platforms without native builds
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const wechaty = require('wechaty') as any;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const wechatyPuppetPadlocal = require('wechaty-puppet-padlocal') as any;
+    const WechatyBuilder = wechaty.WechatyBuilder;
+    const ScanStatus = wechaty.ScanStatus;
+    const PuppetPadlocal = wechatyPuppetPadlocal.PuppetPadlocal;
 
     // 创建 Puppet 实例
     const puppet = new PuppetPadlocal({
