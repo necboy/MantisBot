@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { X, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { SkillManagementSection } from './SkillManagementSection';
@@ -38,6 +38,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [activeProfile, setActiveProfile] = useState('default');
   const [installModalOpen, setInstallModalOpen] = useState(false);
   const [reloadingConfig, setReloadingConfig] = useState(false);
+  const [skillEditorOpen, setSkillEditorOpen] = useState(false);
 
   // Fetch skills on mount
   useEffect(() => {
@@ -122,6 +123,44 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     }
   }
 
+  const loadSkillFiles = useCallback(async (skillName: string): Promise<string[]> => {
+    try {
+      const res = await authFetch(`/api/skills/${skillName}/files`);
+      if (!res.ok) throw new Error('Failed to load skill files');
+      const data = await res.json();
+      return data.files as string[];
+    } catch (err) {
+      console.error('Failed to load skill files:', err);
+      return [];
+    }
+  }, []);
+
+  const loadSkillFileContent = useCallback(async (skillName: string, filePath: string): Promise<string> => {
+    try {
+      const res = await authFetch(`/api/skills/${skillName}/file?path=${encodeURIComponent(filePath)}`);
+      if (!res.ok) throw new Error('Failed to load skill file content');
+      const data = await res.json();
+      return data.content as string;
+    } catch (err) {
+      console.error('Failed to load skill file content:', err);
+      return '';
+    }
+  }, []);
+
+  const saveSkillFileContent = useCallback(async (skillName: string, filePath: string, content: string): Promise<boolean> => {
+    try {
+      const res = await authFetch(`/api/skills/${skillName}/file?path=${encodeURIComponent(filePath)}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content })
+      });
+      return res.ok;
+    } catch (err) {
+      console.error('Failed to save skill file content:', err);
+      return false;
+    }
+  }, []);
+
   async function reloadConfig() {
     setReloadingConfig(true);
     try {
@@ -139,7 +178,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-      <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full max-w-4xl max-h-[80vh] flex flex-col">
+      <div className={`bg-white dark:bg-gray-900 rounded-lg shadow-xl w-full transition-all duration-200 ${skillEditorOpen ? 'max-w-5xl max-h-[90vh]' : 'max-w-4xl max-h-[80vh]'} flex flex-col`}>
         {/* Header */}
         <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between flex-shrink-0">
           <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
@@ -273,6 +312,10 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             onReload={reloadSkills}
             onInstall={() => setInstallModalOpen(true)}
             onDownload={downloadSkill}
+            onLoadFiles={loadSkillFiles}
+            onLoadContent={loadSkillFileContent}
+            onSaveContent={saveSkillFileContent}
+            onEditorChange={setSkillEditorOpen}
           />
         ) : activeTab === 'models' ? (
           <ModelConfigSection />

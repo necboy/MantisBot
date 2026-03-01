@@ -1,7 +1,8 @@
-import { Search, ChevronDown, ChevronRight, FileCode, FileText, Palette, Apple, Wrench, Brain, Music, Utensils, MessageCircle, BookOpen, Folder, RotateCw, Github, Download, Loader2 } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, FileCode, FileText, Palette, Apple, Wrench, Brain, Music, Utensils, MessageCircle, BookOpen, Folder, RotateCw, Github, Download, Loader2, Pencil } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
+import { SkillEditorPanel } from './SkillEditorPanel';
 
 interface Skill {
   name: string;
@@ -22,6 +23,10 @@ interface SkillManagementSectionProps {
   onReload: () => void;
   onInstall: () => void;
   onDownload: (name: string) => void;
+  onLoadFiles: (skillName: string) => Promise<string[]>;
+  onLoadContent: (skillName: string, filePath: string) => Promise<string>;
+  onSaveContent: (skillName: string, filePath: string, content: string) => Promise<boolean>;
+  onEditorChange?: (open: boolean) => void;
 }
 
 // Skill category definitions
@@ -152,11 +157,21 @@ export function SkillManagementSection({
   onSearch,
   onReload,
   onInstall,
-  onDownload
+  onDownload,
+  onLoadFiles,
+  onLoadContent,
+  onSaveContent,
+  onEditorChange
 }: SkillManagementSectionProps) {
   const { t } = useTranslation();
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'grouped' | 'list'>('grouped');
+  const [selectedSkill, setSelectedSkill] = useState<Skill | null>(null);
+
+  function handleSelectSkill(skill: Skill | null) {
+    setSelectedSkill(skill);
+    onEditorChange?.(skill !== null);
+  }
 
   // Filter skills based on search query
   const filteredSkills = skills.filter(skill =>
@@ -189,9 +204,11 @@ export function SkillManagementSection({
   };
 
   return (
-    <>
-      {/* Search Bar & View Controls */}
-      <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
+    <div className="flex flex-1 min-h-0 overflow-hidden">
+      {/* Left panel: skill list (full width when no skill selected, fixed width when split) */}
+      <div className={`flex flex-col min-h-0 overflow-hidden ${selectedSkill ? 'w-80 flex-shrink-0 border-r border-gray-200 dark:border-gray-700' : 'flex-1'}`}>
+        {/* Search Bar & View Controls */}
+        <div className="px-6 py-3 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
         <div className="flex items-center gap-3">
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
@@ -207,22 +224,22 @@ export function SkillManagementSection({
           {/* Install from GitHub Button */}
           <button
             onClick={onInstall}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-600 dark:text-gray-400 transition-colors"
+            className={`flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-600 dark:text-gray-400 transition-colors ${selectedSkill ? 'p-2' : 'px-3 py-2'}`}
             title={t('skills.install.title')}
           >
             <Github className="w-4 h-4" />
-            <span className="hidden sm:inline">{t('skills.install.shortLabel')}</span>
+            {!selectedSkill && <span className="hidden sm:inline">{t('skills.install.shortLabel')}</span>}
           </button>
 
           {/* Reload Button */}
           <button
             onClick={onReload}
             disabled={reloading}
-            className="flex items-center gap-1.5 px-3 py-2 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-600 dark:text-gray-400 disabled:opacity-50 transition-colors"
+            className={`flex items-center gap-1.5 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-sm text-gray-600 dark:text-gray-400 disabled:opacity-50 transition-colors ${selectedSkill ? 'p-2' : 'px-3 py-2'}`}
             title="重新加载 skills（无需重启服务）"
           >
             <RotateCw className={`w-4 h-4 ${reloading ? 'animate-spin' : ''}`} />
-            <span className="hidden sm:inline">{reloading ? '加载中...' : '重新加载'}</span>
+            {!selectedSkill && <span className="hidden sm:inline">{reloading ? '加载中...' : '重新加载'}</span>}
           </button>
 
           {/* View Mode Toggle */}
@@ -302,8 +319,10 @@ export function SkillManagementSection({
                         skill={skill}
                         onToggle={onToggle}
                         onDownload={onDownload}
+                        onView={() => handleSelectSkill(skill)}
                         loading={loading}
                         downloading={downloadingSkills.has(skill.name)}
+                        selected={selectedSkill?.name === skill.name}
                       />
                     ))}
                   </div>
@@ -320,8 +339,10 @@ export function SkillManagementSection({
                 skill={skill}
                 onToggle={onToggle}
                 onDownload={onDownload}
+                onView={() => handleSelectSkill(skill)}
                 loading={loading}
                 downloading={downloadingSkills.has(skill.name)}
+                selected={selectedSkill?.name === skill.name}
               />
             ))}
           </div>
@@ -335,7 +356,21 @@ export function SkillManagementSection({
           <span>{t('skills.enabled')}: {skills.filter(s => s.enabled).length} | {t('skills.disabled')}: {skills.filter(s => !s.enabled).length}</span>
         </div>
       </div>
-    </>
+      </div>{/* end left panel */}
+
+      {/* Right panel: editor */}
+      {selectedSkill && (
+        <div className="flex-1 min-w-0 overflow-hidden">
+          <SkillEditorPanel
+            skill={selectedSkill}
+            onClose={() => handleSelectSkill(null)}
+            onLoadFiles={onLoadFiles}
+            onLoadContent={onLoadContent}
+            onSaveContent={onSaveContent}
+          />
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -344,13 +379,15 @@ interface SkillItemProps {
   skill: Skill;
   onToggle: (name: string) => void;
   onDownload: (name: string) => void;
+  onView: () => void;
   loading: boolean;
   downloading?: boolean;
+  selected?: boolean;
 }
 
-function SkillItem({ skill, onToggle, onDownload, loading, downloading = false }: SkillItemProps) {
+function SkillItem({ skill, onToggle, onDownload, onView, loading, downloading = false, selected = false }: SkillItemProps) {
   return (
-    <div className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors rounded-lg">
+    <div className={`p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors rounded-lg ${selected ? 'bg-primary-50 dark:bg-primary-900/10' : ''}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 mb-1">
@@ -370,6 +407,15 @@ function SkillItem({ skill, onToggle, onDownload, loading, downloading = false }
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Edit Button */}
+          <button
+            onClick={onView}
+            className={`p-1 rounded transition-colors ${selected ? 'text-primary-600 dark:text-primary-400' : 'text-gray-400 hover:text-primary-600 dark:hover:text-primary-400'}`}
+            title="查看/编辑 skill 文件"
+          >
+            <Pencil className="w-4 h-4" />
+          </button>
+
           {/* Download Button */}
           <button
             onClick={() => onDownload(skill.name)}
