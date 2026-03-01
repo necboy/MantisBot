@@ -3,9 +3,14 @@
   "version": "1.0.0",
   "type": "module",
   "scripts": {
-    "dev": "tsx watch src/entry.ts",
+    "predev": "node scripts/kill-port.cjs 8118",
+    "postinstall": "node scripts/postinstall.cjs",
+    "dev": "concurrently --names \"后端,前端\" --prefix-colors \"cyan.bold,magenta.bold\" --kill-others-on-fail \"node --watch --import tsx/esm src/entry.ts\" \"npm --prefix web-ui run dev\"",
+    "dev:backend": "node --watch --import tsx/esm src/entry.ts",
     "build": "tsc",
-    "start": "node dist/entry.js",
+    "build:ui": "npm --prefix web-ui run build",
+    "build:all": "npm run build && npm run build:ui",
+    "start": "npm run build:all && concurrently --names \"后端,前端\" --prefix-colors \"cyan.bold,magenta.bold\" \"node dist/entry.js\" \"npm --prefix web-ui run preview\"",
     "test": "vitest",
     "test:run": "vitest run",
     "test:coverage": "vitest --coverage"
@@ -37,11 +42,13 @@
     "sqlite-vec": "^0.1.7-alpha.2",
     "uuid": "^9.0.1",
     "webdav": "^5.9.0",
-    "wechaty": "^1.20.2",
-    "wechaty-puppet-padlocal": "^1.20.1",
-    "whatsapp-web.js": "^1.34.6",
     "ws": "^8.16.0",
     "zod": "^4.0.0"
+  },
+  "optionalDependencies": {
+    "wechaty": "^1.20.2",
+    "wechaty-puppet-padlocal": "^1.20.1",
+    "whatsapp-web.js": "^1.34.6"
   },
   "devDependencies": {
     "@types/cors": "^2.8.17",
@@ -54,6 +61,7 @@
     "@types/uuid": "^9.0.7",
     "@types/ws": "^8.5.10",
     "@vitest/coverage-v8": "^4.0.18",
+    "concurrently": "^9.2.1",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3",
     "vitest": "^4.0.18"

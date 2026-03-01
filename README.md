@@ -159,8 +159,10 @@ MantisBot's 40+ skills cover various aspects of work and life:
 
 #### Prerequisites
 
-- Node.js >= 18.0.0
-- npm or pnpm
+| Dependency | Minimum | Notes |
+|------------|---------|-------|
+| Node.js | **18.11+** | 22.x recommended (`--watch` requires 18.11+) |
+| npm | 8+ | Bundled with Node.js |
 
 #### Installation
 
@@ -169,83 +171,128 @@ MantisBot's 40+ skills cover various aspects of work and life:
 git clone https://github.com/necboy/MantisBot.git
 cd MantisBot
 
-# Install dependencies
+# Install all dependencies (frontend included via postinstall)
 npm install
-
-# Install frontend dependencies
-cd web-ui && npm install && cd ..
 ```
 
 > **Dependency conflict notice**
 >
 > This project uses `zod@^4.x` (required by `@anthropic-ai/claude-agent-sdk`), while `openai@4.x/5.x` declares an optional peer dependency on `zod@^3.x`. npm v7+ treats this as an error by default.
 >
-> If you see an `ERESOLVE` error during `npm install`, use either option below:
->
-> **Option A — `--legacy-peer-deps` (recommended)**
-> Ignores the optional peer conflict. Safe because the project does not use OpenAI's zod-based helpers (e.g. `zodResponseFormat`).
+> A `.npmrc` file with `legacy-peer-deps=true` is already included in the repository, so this is handled automatically. If you still see an `ERESOLVE` error, run:
 > ```bash
 > npm install --legacy-peer-deps
-> cd web-ui && npm install && cd ..
-> ```
->
-> **Option B — `--force`**
-> Forces resolution. Use only if Option A still fails.
-> ```bash
-> npm install --force
-> cd web-ui && npm install --force && cd ..
 > ```
 
-#### Configuration
+> **Windows native module note**
+>
+> `wechaty` (WeChat channel) and `whatsapp-web.js` contain native C++ modules that require Visual Studio Build Tools to compile. They are declared as `optionalDependencies`, so `npm install` succeeds even if the build fails — these channels simply won't be available until the tools are installed. To enable them, install [Visual Studio C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
+
+
 
 ```bash
 # Copy example config
 cp config/config.example.json config/config.json
-
-# Edit config.json with your API keys
-# Supports environment variables: "${YOUR_API_KEY_ENV}"
 ```
 
-#### Start
+Open `config/config.json` and fill in at least one model's API key:
+
+```json
+{
+  "models": [
+    {
+      "name": "MyModel",
+      "protocol": "openai",
+      "model": "gpt-4o",
+      "apiKey": "sk-..."
+    }
+  ],
+  "defaultModel": "MyModel"
+}
+```
+
+> If `config/config.json` does not exist on first start, the backend will auto-generate one with default values.
+
+#### Start Development (both frontend + backend)
 
 ```bash
-# Using startup script (recommended)
-./start.sh
-
-# Or manually start
-# Backend
 npm run dev
-
-# Frontend
-cd web-ui && npm run dev
 ```
 
-Visit http://localhost:3000 to access the Web UI.
+Both backend and frontend logs appear in the same terminal with colored prefixes:
+
+```
+[后端] [MantisBot] Starting...
+[后端] [HTTPWSChannel] Started on port 8118
+[前端] VITE v5.x.x  ready in xxx ms
+[前端] ➜  Local:   http://localhost:3000/
+```
+
+Visit **http://localhost:3000** to access the Web UI.
+
+#### Production Start
+
+```bash
+npm run start
+```
+
+This compiles the TypeScript backend and Vite frontend, then runs both in production mode.
+
+#### Available npm Scripts
+
+| Command | Description |
+|---------|-------------|
+| `npm run dev` | Start both backend + frontend (watch mode, merged logs) |
+| `npm run dev:backend` | Start backend only (watch mode) |
+| `npm run build` | Compile backend TypeScript → `dist/` |
+| `npm run build:ui` | Build frontend → `web-ui/dist/` |
+| `npm run build:all` | Compile backend + build frontend |
+| `npm run start` | Build everything then run in production mode |
+| `npm run test` | Run unit tests (watch mode) |
+| `npm run test:run` | Run unit tests (single pass) |
+| `npm run test:coverage` | Run tests with coverage report |
+
+> **Port reference:** Backend API runs on `:8118`, Vite dev server on `:3000`. The dev server proxies `/api`, `/ws`, `/health`, and `/office-preview` to the backend.
 
 ### 🏗️ Project Structure
 
 ```
 MantisBot/
-├── src/                    # Main codebase
-│   ├── agents/            # Agent core logic
-│   ├── channels/          # Communication channels (HTTP-WS, Feishu, Slack)
-│   ├── memory/            # Memory system
-│   ├── plugins/           # Plugin system
-│   ├── reliability/       # Reliability components
-│   └── tools/             # Tool registry
-├── skills/                 # Skills directory (40+)
-├── web-ui/                # React frontend
-├── config/                # Configuration files
-└── docs/                  # Documentation
+├── config/
+│   ├── config.json          # Runtime config (not committed to git)
+│   └── config.example.json  # Config template
+├── scripts/
+│   └── kill-port.cjs        # Helper to free port before dev start
+├── skills/                  # Skills directory (40+)
+├── plugins/                 # Plugins directory
+├── data/                    # Runtime data (SQLite, sessions, files — not committed)
+├── src/
+│   ├── entry.ts             # Backend entry point
+│   ├── config/              # Config loading and Schema validation
+│   ├── channels/            # Channel implementations (http-ws, feishu, dingtalk…)
+│   ├── agents/              # Agent core (LLM calls, tools, Skills)
+│   ├── session/             # Session management
+│   ├── memory/              # Memory and vector retrieval
+│   ├── storage/             # File storage (local/NAS)
+│   ├── cron/                # Cron task scheduler
+│   ├── tunnel/              # Tunnel services
+│   ├── plugins/             # Plugin loader
+│   └── reliability/         # Error handling, circuit breaker, retry
+├── web-ui/                  # React frontend
+│   ├── src/
+│   └── vite.config.ts       # Vite config (includes backend proxy)
+├── dist/                    # Compiled output (auto-generated, not committed)
+├── package.json
+└── tsconfig.json
 ```
 
 ### 🛠️ Tech Stack
 
 **Backend:**
 
-- TypeScript + Node.js
-- Express + WebSocket
-- SQLite (sqlite-vec) + Better-SQLite3
+- TypeScript + Node.js 22
+- Express + WebSocket (ws)
+- SQLite (Node.js built-in) + sqlite-vec (vector extension)
 - Zod (configuration validation)
 
 **Frontend:**
@@ -413,8 +460,12 @@ MantisBot 的 40+ 技能可以覆盖工作和生活的方方面面，以下是�
 
 #### 前置要求
 
-- Node.js >= 18.0.0
-- npm 或 pnpm
+| 依赖 | 最低版本 | 说明 |
+|------|---------|------|
+| Node.js | **18.11+** | 推荐 22.x，`--watch` 标志需要 18.11+ |
+| npm | 8+ | 随 Node.js 附带 |
+
+> **Windows 用户**：推荐使用 [nvm-windows](https://github.com/coreybutler/nvm-windows) 管理 Node.js 版本。
 
 #### 安装
 
@@ -423,91 +474,170 @@ MantisBot 的 40+ 技能可以覆盖工作和生活的方方面面，以下是�
 git clone https://github.com/necboy/MantisBot.git
 cd MantisBot
 
-# 安装依赖
+# 一键安装全部依赖（postinstall 自动安装前端依赖）
 npm install
-
-# 安装前端依赖
-cd web-ui && npm install && cd ..
 ```
 
 > **依赖冲突说明**
 >
-> 本项目使用 `zod@^4.x`（`@anthropic-ai/claude-agent-sdk` 的硬性依赖），而 `openai@4.x/5.x` 声明了对 `zod@^3.x` 的可选对等依赖（peerOptional）。npm v7+ 默认会将此冲突视为错误。
->
-> 如果执行 `npm install` 时出现 `ERESOLVE` 错误，请选择以下任一方案：
->
-> **方案 A — `--legacy-peer-deps`（推荐）**
-> 忽略可选对等依赖冲突。本项目未使用 OpenAI 的 zod 辅助功能（如 `zodResponseFormat`），因此完全安全。
+> 本项目使用 `zod@^4.x`，而 `openai@4.x/5.x` 声明了对 `zod@^3.x` 的可选对等依赖，npm v7+ 默认视为错误。
+> 仓库中已包含 `.npmrc`（`legacy-peer-deps=true`），安装时会自动处理。如仍出现 `ERESOLVE` 错误，请执行：
 > ```bash
 > npm install --legacy-peer-deps
-> cd web-ui && npm install && cd ..
 > ```
+
+> **Windows 原生模块说明**
 >
-> **方案 B — `--force`**
-> 强制解析。仅在方案 A 仍失败时使用。
-> ```bash
-> npm install --force
-> cd web-ui && npm install --force && cd ..
-> ```
+> `wechaty`（微信渠道）和 `whatsapp-web.js` 包含需要 C++ 编译的原生模块。它们已被声明为 `optionalDependencies`，因此即使编译失败，`npm install` 也会正常完成——只是对应渠道暂时不可用。如需启用，请安装 [Visual Studio C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/)。
 
 #### 配置
 
 ```bash
 # 复制示例配置
 cp config/config.example.json config/config.json
-
-# 编辑配置文件，填入你的 API Key
-# 支持环境变量: "${YOUR_API_KEY_ENV}"
 ```
 
-#### 启动
+打开 `config/config.json`，至少填写一个模型的 API Key：
+
+```json
+{
+  "models": [
+    {
+      "name": "MyModel",
+      "protocol": "openai",
+      "model": "gpt-4o",
+      "apiKey": "sk-..."
+    }
+  ],
+  "defaultModel": "MyModel"
+}
+```
+
+> 首次启动时若 `config/config.json` 不存在，后端会自动生成包含默认值的配置文件。
+
+#### 启动开发环境（前后端同时启动）
 
 ```bash
-# 使用启动��本（推荐）
-./start.sh
-
-# 或手动启动
-# 后端
 npm run dev
-
-# 前端
-cd web-ui && npm run dev
 ```
 
-访问 http://localhost:3000 即可使用 Web UI。
+前后端日志以彩色前缀合并输出到同一个终端：
+
+```
+[后端] [MantisBot] Starting...
+[后端] [HTTPWSChannel] Started on port 8118
+[前端] VITE v5.x.x  ready in xxx ms
+[前端] ➜  Local:   http://localhost:3000/
+```
+
+浏览器访问 **http://localhost:3000** 即可进入管理界面。
+
+#### 生产模式启动
+
+```bash
+npm run start
+```
+
+自动编译前后端，然后以生产模式运行。
+
+#### NPM 脚本一览
+
+| 命令 | 说明 |
+|------|------|
+| `npm run dev` | **同时启动前后端**（热重载，日志合并输出） |
+| `npm run dev:backend` | 仅启动后端（热重载） |
+| `npm run build` | 编译后端 TypeScript → `dist/` |
+| `npm run build:ui` | 编译前端 → `web-ui/dist/` |
+| `npm run build:all` | 编译前后端 |
+| `npm run start` | 编译全部后以**生产模式**启动前后端 |
+| `npm run test` | 运行单元测试（监听模式） |
+| `npm run test:run` | 运行单元测试（单次） |
+| `npm run test:coverage` | 运行测试并生成覆盖率报告 |
+
+> **端口说明**：后端 API 运行在 `:8118`，Vite 开发服务器运行在 `:3000`，开发模式下 `/api`、`/ws`、`/health`、`/office-preview` 请求会自动代理到后端。
+
+#### 常见问题
+
+**启动时报 `EADDRINUSE: address already in use :::8118`**
+
+端口被上次未正常退出的进程占用。`npm run dev` 通过 `predev` 脚本会自动处理，若手动启动遇到此问题，执行：
+
+```bash
+node scripts/kill-port.cjs 8118
+```
+
+**启动时出现 `sqlite-vec extension loading failed` 警告**
+
+这是正常现象，系统已自动切换到纯 JS 实现，不影响功能使用。若需原生向量性能，可安装对应平台包：
+
+```bash
+# Windows ARM64
+npm install sqlite-vec-windows-arm64
+
+# Windows x64
+npm install sqlite-vec-windows-x64
+
+# macOS Apple Silicon
+npm install sqlite-vec-darwin-arm64
+```
+
+**如何修改默认登录密码**
+
+在 Web UI 的「设置 → 系统设置 → 访问控制」中在线修改，或直接在 `config/config.json` 中更新：
+
+```bash
+node -e "const c=require('crypto');console.log('sha256:'+c.createHash('sha256').update('新密码').digest('hex'))"
+```
+
+将输出的哈希值填入 `server.auth.password` 字段。
 
 ### 🏗️ 项目结构
 
 ```
 MantisBot/
-├── src/                    # 主代码库
-│   ├── agents/            # Agent 核心逻辑
-│   ├── channels/          # 通信渠道（HTTP-WS、飞书、Slack）
-│   ├── memory/            # 记忆系统
-│   ├── plugins/           # 插件系统
-│   ├── reliability/       # 可靠性组件
-│   └── tools/             # 工具注册表
-├── skills/                 # 技能目录（40+）
-├── web-ui/                # React 前端
-├── config/                # 配置文件
-└── docs/                  # 文档
+├── config/
+│   ├── config.json          # 运行时配置（不提交到 git）
+│   └── config.example.json  # 配置模板
+├── scripts/
+│   └── kill-port.cjs        # 开发启动前释放端口的辅助脚本
+├── skills/                  # Skills 技能目录（40+）
+├── plugins/                 # Plugins 插件目录
+├── data/                    # 运行时数据（SQLite、会话、文件，不提交到 git）
+├── src/
+│   ├── entry.ts             # 后端入口
+│   ├── config/              # 配置加载与 Schema 验证
+│   ├── channels/            # 各渠道实现（http-ws、feishu、dingtalk…）
+│   ├── agents/              # Agent 核心逻辑（LLM 调用、工具、Skills）
+│   ├── session/             # 会话管理
+│   ├── memory/              # 记忆与向量检索
+│   ├── storage/             # 文件存储（本地/NAS）
+│   ├── cron/                # 定时任务调度
+│   ├─��� tunnel/              # 内网穿透
+│   ├── plugins/             # 插件加载器
+│   └── reliability/         # 错误处理、熔断器、重试
+├── web-ui/                  # React 前端
+│   ├── src/
+│   └── vite.config.ts       # Vite 配置（含后端代理）
+├── dist/                    # 编译产物（自动生成，不提交到 git）
+├── package.json
+└── tsconfig.json
 ```
 
 ### 🛠️ 技术栈
 
 **后端:**
 
-- TypeScript + Node.js
-- Express + WebSocket
-- SQLite (sqlite-vec) + Better-SQLite3
-- Zod (配置验证)
+- TypeScript + Node.js 22
+- Express + WebSocket (ws)
+- SQLite（Node.js 内置）+ sqlite-vec（向量扩展）
+- Zod（配置验证）
 
 **前端:**
 
 - React 18 + TypeScript
 - Vite + TailwindCSS
 - React Query + React Router
-- i18next (国际化)
+- i18next（国际化）
 
 ### 📦 Docker 部署
 

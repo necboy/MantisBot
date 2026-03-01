@@ -227,6 +227,8 @@ function App() {
   // 后端连接状态
   const [backendStatus, setBackendStatus] = useState<'checking' | 'connected' | 'reconnecting'>('checking');
   const [retryCount, setRetryCount] = useState(0);
+  const [healthError, setHealthError] = useState('');
+  const [showHealthDetail, setShowHealthDetail] = useState(false);
 
   // 聊天消息自动滚动相关
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -306,12 +308,15 @@ function App() {
         if (response.ok) {
           setBackendStatus('connected');
           setRetryCount(0);
+          setHealthError('');
         } else {
-          throw new Error('Health check failed');
+          throw new Error(`HTTP ${response.status} ${response.statusText}`);
         }
       } catch (error) {
         if (!isMounted) return;
 
+        const msg = error instanceof Error ? error.message : String(error);
+        setHealthError(msg.includes('Failed to fetch') || msg.includes('fetch') ? '无法连接到服务器' : msg);
         setBackendStatus('reconnecting');
         setRetryCount(prev => prev + 1);
 
@@ -1631,7 +1636,7 @@ function App() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
-            {(t('backend.reconnecting') || '后端服务可能正在重启，5 秒后自动重试...') + (retryCount > 1 ? ` (${retryCount})` : '')}
+            {healthError ? `后端连接失败：${healthError}` : (t('backend.reconnecting') || '后端服务可能正在重启')}，5 秒后自动重试{retryCount > 1 ? ` (${retryCount})` : ''}
           </div>
         </div>
       )}
@@ -1640,10 +1645,62 @@ function App() {
         {/* Sidebar */}
         <aside className="w-full md:w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full">
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
-          <div className="flex items-center gap-2 text-primary-600">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
-            <span className="text-xl font-bold">{t('app.title')}</span>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-primary-600">
+              <img src="/logo.png" alt="Logo" className="w-8 h-8 object-contain" />
+              <span className="text-xl font-bold">{t('app.title')}</span>
+            </div>
+            {/* Backend health status dot */}
+            <button
+              type="button"
+              onClick={() => backendStatus === 'reconnecting' && setShowHealthDetail(v => !v)}
+              title={
+                backendStatus === 'checking' ? '检查中...' :
+                backendStatus === 'connected' ? '后端在线' :
+                `后端离线${healthError ? '：' + healthError : ''}`
+              }
+              className={`flex items-center gap-1.5 text-xs rounded px-1.5 py-1 transition-colors ${
+                backendStatus === 'reconnecting'
+                  ? 'cursor-pointer hover:bg-red-50 dark:hover:bg-red-950/30'
+                  : 'cursor-default'
+              }`}
+            >
+              {backendStatus === 'checking' && (
+                <svg className="w-3 h-3 animate-spin text-gray-400" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                </svg>
+              )}
+              {backendStatus === 'connected' && (
+                <span className="w-2 h-2 rounded-full bg-green-500" />
+              )}
+              {backendStatus === 'reconnecting' && (
+                <>
+                  <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                  <span className="text-red-500 dark:text-red-400">离线</span>
+                </>
+              )}
+            </button>
           </div>
+
+          {/* Offline guidance panel (expands below header) */}
+          {backendStatus === 'reconnecting' && showHealthDetail && (
+            <div className="mt-3 rounded-lg bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/50 p-3 space-y-2">
+              <p className="text-xs text-red-700 dark:text-red-300 font-medium">后端服务未启动或已崩溃</p>
+              <div className="flex items-center gap-2 bg-gray-900 dark:bg-black rounded-md px-3 py-1.5">
+                <svg className="w-3.5 h-3.5 text-gray-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 9l3 3-3 3m5 0h3" />
+                </svg>
+                <code className="text-xs text-green-400 font-mono">npm start</code>
+              </div>
+              {healthError && (
+                <div className="text-xs text-red-500 dark:text-red-400 font-mono bg-red-100 dark:bg-red-950/40 rounded px-2 py-1 break-all">
+                  {healthError}
+                </div>
+              )}
+              <p className="text-xs text-red-500 dark:text-red-400">已重试 {retryCount} 次，每 5 秒自动重试。</p>
+            </div>
+          )}
         </div>
 
         <div className="p-2 flex-shrink-0">
