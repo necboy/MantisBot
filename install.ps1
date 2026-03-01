@@ -393,6 +393,28 @@ function Build-MantisBot {
 }
 
 # ------------------------------------------------------------
+# STEP 5b: Install Playwright Chromium browser
+# 安装 Playwright Chromium 浏览器
+# ------------------------------------------------------------
+function Install-PlaywrightBrowser {
+    Write-Step "Installing Playwright Chromium Browser"
+    Write-Info "Downloading Chromium for browser automation features..."
+    Write-Host ""
+
+    & npx playwright install chromium
+
+    if ($LASTEXITCODE -eq 0) {
+        Write-Host ""
+        Write-Ok "Chromium browser installed successfully"
+    }
+    else {
+        Write-Host ""
+        Write-Warn "Chromium install failed - browser automation features may not work"
+        Write-Info "You can retry manually: npx playwright install chromium"
+    }
+}
+
+# ------------------------------------------------------------
 # STEP 6: Start
 # 启动
 # ------------------------------------------------------------
@@ -472,6 +494,7 @@ function Main {
     Install-Deps
     Setup-Config
     Build-MantisBot
+    Install-PlaywrightBrowser
     Start-MantisBot
 
     Write-Host ""

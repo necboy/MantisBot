@@ -331,6 +331,24 @@ build_project() {
 }
 
 # ────────────────────────────────────────────────────────────
+# STEP 5b: 安装 Playwright Chromium 浏览器
+# ────────────────────────────────────────────────────────────
+install_playwright_browser() {
+  step "安装 Playwright Chromium 浏览器 / Installing Playwright Chromium Browser"
+  info "正在下载 Chromium，用于浏览器自动化功能..."
+  echo ""
+
+  if npx playwright install chromium; then
+    echo ""
+    ok "Chromium 浏览器安装完成"
+  else
+    echo ""
+    warn "Chromium 安装失败，浏览器自动化功能可能无法使用"
+    info "可手动重试：npx playwright install chromium"
+  fi
+}
+
+# ────────────────────────────────────────────────────────────
 # STEP 6: 启动
 # ────────────────────────────────────────────────────────────
 start_project() {
@@ -416,6 +434,7 @@ main() {
   install_deps
   setup_config
   build_project
+  install_playwright_browser
   start_project
 
   echo ""

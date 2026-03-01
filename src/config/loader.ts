@@ -85,6 +85,7 @@ export function getDefaultConfig(): Config {
     plugins: [
       { name: 'document', enabled: true },
       { name: 'logger', enabled: true },
+      { name: 'browser', enabled: true },
     ],
     workspace: './data',
     allowedPaths: [],

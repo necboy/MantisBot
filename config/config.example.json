@@ -13,7 +13,7 @@
   "models": [
     {
       "name": "MiniMax",
-      "type": "anthropic",
+      "protocol": "anthropic",
       "model": "MiniMax-M2.5",
       "apiKey": "${MINIMAX_API_KEY}",
       "baseURL": "https://api.minimaxi.com/anthropic"
@@ -31,7 +31,8 @@
   },
   "plugins": [
     { "name": "document", "enabled": true },
-    { "name": "logger", "enabled": true }
+    { "name": "logger", "enabled": true },
+    { "name": "browser", "enabled": true }
   ],
   "workspace": "./data",
   "allowedPaths": [],

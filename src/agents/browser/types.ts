@@ -46,7 +46,7 @@ class BrowserManager {
     }
 
     this.state.browser = await chromium.launch({
-      headless: options.headless ?? false,
+      headless: options.headless ?? true,
       slowMo: options.slowMo,
       timeout: options.timeout ?? 30000,
     });
