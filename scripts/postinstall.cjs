@@ -31,3 +31,15 @@ try {
   console.error('[postinstall] web-ui install failed:', e.message);
   process.exit(1);
 }
+
+// Install Playwright Chromium browser for browser automation features.
+// Skipped automatically in Docker (SKIP_WEB_UI_INSTALL=true exits above).
+// Failure is non-fatal to avoid blocking npm install on slow/offline networks.
+console.log('[postinstall] Installing Playwright Chromium browser...');
+try {
+  execSync('npx playwright install chromium', { cwd: rootDir, stdio: 'inherit' });
+  console.log('[postinstall] Playwright Chromium installed.');
+} catch (e) {
+  console.warn('[postinstall] Playwright Chromium install failed (browser features may not work):', e.message);
+  console.warn('[postinstall] Retry manually: npx playwright install chromium');
+}
