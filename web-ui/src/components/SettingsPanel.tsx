@@ -33,6 +33,7 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
   const [reloading, setReloading] = useState(false);
+  const [downloadingSkills, setDownloadingSkills] = useState<Set<string>>(new Set());
   const [activeTab, setActiveTab] = useState<'skills' | 'models' | 'profiles' | 'evolutions' | 'paths' | 'channels' | 'email' | 'auth' | 'firecrawl'>('models');
   const [activeProfile, setActiveProfile] = useState('default');
   const [installModalOpen, setInstallModalOpen] = useState(false);
@@ -88,6 +89,36 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
       await fetchSkills();
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function downloadSkill(skillName: string) {
+    if (downloadingSkills.has(skillName)) return;
+    setDownloadingSkills(prev => new Set(prev).add(skillName));
+    try {
+      const res = await authFetch(`/api/skills/${skillName}/download`);
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({ error: 'Download failed' }));
+        console.error('Failed to download skill:', err.error);
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${skillName}.skill`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download skill:', err);
+    } finally {
+      setDownloadingSkills(prev => {
+        const next = new Set(prev);
+        next.delete(skillName);
+        return next;
+      });
     }
   }
 
@@ -236,10 +267,12 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
             searchQuery={searchQuery}
             loading={loading}
             reloading={reloading}
+            downloadingSkills={downloadingSkills}
             onToggle={toggleSkill}
             onSearch={setSearchQuery}
             onReload={reloadSkills}
             onInstall={() => setInstallModalOpen(true)}
+            onDownload={downloadSkill}
           />
         ) : activeTab === 'models' ? (
           <ModelConfigSection />

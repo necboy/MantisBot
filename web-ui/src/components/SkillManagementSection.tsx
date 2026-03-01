@@ -1,4 +1,4 @@
-import { Search, ChevronDown, ChevronRight, FileCode, FileText, Palette, Apple, Wrench, Brain, Music, Utensils, MessageCircle, BookOpen, Folder, RotateCw, Github } from 'lucide-react';
+import { Search, ChevronDown, ChevronRight, FileCode, FileText, Palette, Apple, Wrench, Brain, Music, Utensils, MessageCircle, BookOpen, Folder, RotateCw, Github, Download, Loader2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import i18n from '../i18n';
@@ -16,10 +16,12 @@ interface SkillManagementSectionProps {
   searchQuery: string;
   loading: boolean;
   reloading?: boolean;
+  downloadingSkills?: Set<string>;
   onToggle: (name: string) => void;
   onSearch: (query: string) => void;
   onReload: () => void;
   onInstall: () => void;
+  onDownload: (name: string) => void;
 }
 
 // Skill category definitions
@@ -145,13 +147,15 @@ export function SkillManagementSection({
   searchQuery,
   loading,
   reloading = false,
+  downloadingSkills = new Set(),
   onToggle,
   onSearch,
   onReload,
-  onInstall
+  onInstall,
+  onDownload
 }: SkillManagementSectionProps) {
   const { t } = useTranslation();
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set(SKILL_CATEGORIES.map(c => c.id)));
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
   const [viewMode, setViewMode] = useState<'grouped' | 'list'>('grouped');
 
   // Filter skills based on search query
@@ -297,7 +301,9 @@ export function SkillManagementSection({
                         key={skill.name}
                         skill={skill}
                         onToggle={onToggle}
+                        onDownload={onDownload}
                         loading={loading}
+                        downloading={downloadingSkills.has(skill.name)}
                       />
                     ))}
                   </div>
@@ -313,7 +319,9 @@ export function SkillManagementSection({
                 key={skill.name}
                 skill={skill}
                 onToggle={onToggle}
+                onDownload={onDownload}
                 loading={loading}
+                downloading={downloadingSkills.has(skill.name)}
               />
             ))}
           </div>
@@ -335,10 +343,12 @@ export function SkillManagementSection({
 interface SkillItemProps {
   skill: Skill;
   onToggle: (name: string) => void;
+  onDownload: (name: string) => void;
   loading: boolean;
+  downloading?: boolean;
 }
 
-function SkillItem({ skill, onToggle, loading }: SkillItemProps) {
+function SkillItem({ skill, onToggle, onDownload, loading, downloading = false }: SkillItemProps) {
   return (
     <div className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors rounded-lg">
       <div className="flex items-start justify-between gap-4">
@@ -359,23 +369,38 @@ function SkillItem({ skill, onToggle, loading }: SkillItemProps) {
           </p>
         </div>
 
-        {/* Toggle Switch */}
-        <button
-          onClick={() => onToggle(skill.name)}
-          disabled={loading}
-          className={`flex-shrink-0 w-10 h-5 rounded-full relative transition-colors ${
-            skill.enabled
-              ? 'bg-primary-600'
-              : 'bg-gray-300 dark:bg-gray-700'
-          } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-          title={skill.enabled ? '点击禁用' : '点击启用'}
-        >
-          <div
-            className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all ${
-              skill.enabled ? 'right-0.5' : 'left-0.5'
-            }`}
-          />
-        </button>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {/* Download Button */}
+          <button
+            onClick={() => onDownload(skill.name)}
+            disabled={downloading}
+            className="p-1 rounded text-gray-400 hover:text-primary-600 dark:hover:text-primary-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            title="下载 .skill 文件"
+          >
+            {downloading
+              ? <Loader2 className="w-4 h-4 animate-spin" />
+              : <Download className="w-4 h-4" />
+            }
+          </button>
+
+          {/* Toggle Switch */}
+          <button
+            onClick={() => onToggle(skill.name)}
+            disabled={loading}
+            className={`w-10 h-5 rounded-full relative transition-colors ${
+              skill.enabled
+                ? 'bg-primary-600'
+                : 'bg-gray-300 dark:bg-gray-700'
+            } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+            title={skill.enabled ? '点击禁用' : '点击启用'}
+          >
+            <div
+              className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all ${
+                skill.enabled ? 'right-0.5' : 'left-0.5'
+              }`}
+            />
+          </button>
+        </div>
       </div>
     </div>
   );

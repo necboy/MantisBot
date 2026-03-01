@@ -1,5 +1,12 @@
 // src/channels/http-ws/http-server.ts
 
+import path from 'node:path';
+import fs from 'node:fs';
+import os from 'node:os';
+import { execFile } from 'node:child_process';
+import { promisify } from 'node:util';
+import multer from 'multer';
+import AdmZip from 'adm-zip';
 import express from 'express';
 import cors from 'cors';
 import { v4 as uuidv4 } from 'uuid';
@@ -916,6 +923,110 @@ export async function createHTTPServer(options: HTTPServerOptions) {
     } catch (error) {
       console.error('[API] Failed to toggle skill:', error);
       res.status(500).json({ error: 'Failed to toggle skill' });
+    }
+  });
+
+  // Download skill as .skill file
+  // GET /api/skills/:name/download - 打包并下载 skill 文件
+  app.get('/api/skills/:name/download', async (req, res) => {
+    const execFileAsync = promisify(execFile);
+    let tmpDir: string | null = null;
+    try {
+      const skillName = req.params.name;
+      const loaded = options.skillsLoader.get(skillName);
+      if (!loaded) {
+        res.status(404).json({ error: `Skill not found: ${skillName}` });
+        return;
+      }
+
+      const skillFilePath = loaded.skill.filePath;
+      if (!skillFilePath) {
+        res.status(400).json({ error: 'Skill has no file path' });
+        return;
+      }
+
+      const skillDir = path.dirname(skillFilePath);
+      const skillsDir = options.skillsLoader.getSkillsDir();
+      const packageScript = path.join(skillsDir, 'skill-creator/scripts/package_skill.py');
+
+      if (!fs.existsSync(packageScript)) {
+        res.status(500).json({ error: 'package_skill.py not found' });
+        return;
+      }
+
+      tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), 'skill-pkg-'));
+      await execFileAsync('python3', [packageScript, skillDir, tmpDir]);
+
+      const outputFile = path.join(tmpDir, `${skillName}.skill`);
+      if (!fs.existsSync(outputFile)) {
+        res.status(500).json({ error: 'Packaging failed: output file not created' });
+        return;
+      }
+
+      res.setHeader('Content-Type', 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${skillName}.skill"`);
+      const stream = fs.createReadStream(outputFile);
+      stream.on('end', () => {
+        if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
+      });
+      stream.pipe(res);
+    } catch (error: any) {
+      if (tmpDir) fs.rmSync(tmpDir, { recursive: true, force: true });
+      const stderr = error?.stderr || '';
+      console.error('[API] Failed to package skill:', error);
+      res.status(500).json({ error: `Packaging failed: ${stderr || String(error)}` });
+    }
+  });
+
+  // Upload .skill file to install
+  // POST /api/skills/upload - 从 .skill 文件安装 skill
+  const upload = multer({
+    storage: multer.memoryStorage(),
+    limits: { fileSize: 10 * 1024 * 1024 }, // 10MB
+    fileFilter: (_req, file, cb) => {
+      if (path.extname(file.originalname).toLowerCase() === '.skill') {
+        cb(null, true);
+      } else {
+        cb(new Error('Only .skill files are allowed'));
+      }
+    }
+  });
+
+  app.post('/api/skills/upload', upload.single('file'), async (req, res) => {
+    try {
+      if (!req.file) {
+        res.status(400).json({ success: false, error: 'No file uploaded' });
+        return;
+      }
+
+      const skillsDir = options.skillsLoader.getSkillsDir();
+      const zip = new AdmZip(req.file.buffer);
+      const entries = zip.getEntries();
+
+      // .skill 文件内部结构：<skillName>/SKILL.md 等
+      // 找到顶层目录名作为 skill 名称
+      const topDirs = new Set<string>();
+      for (const entry of entries) {
+        const parts = entry.entryName.split('/');
+        if (parts[0]) topDirs.add(parts[0]);
+      }
+
+      if (topDirs.size === 0) {
+        res.status(400).json({ success: false, error: 'Invalid .skill file: empty archive' });
+        return;
+      }
+
+      // 解压到 skills 目录
+      zip.extractAllTo(skillsDir, true);
+
+      const installed = Array.from(topDirs);
+      await options.skillsLoader.reload();
+
+      console.log(`[API] Installed skill(s) from upload: ${installed.join(', ')}`);
+      res.json({ success: true, installed });
+    } catch (error: any) {
+      console.error('[API] Failed to upload skill:', error);
+      res.status(500).json({ success: false, error: String(error) });
     }
   });
 
