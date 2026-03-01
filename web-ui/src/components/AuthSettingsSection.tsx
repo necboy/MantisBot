@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { authFetch, setAuthToken } from '../utils/auth';
+import { cachedFetch, invalidateCache } from '../utils/configCache';
 
 export function AuthSettingsSection() {
   const { t } = useTranslation();
@@ -31,9 +32,11 @@ export function AuthSettingsSection() {
 
   async function fetchAuthStatus() {
     try {
-      const res = await authFetch('/api/auth/check');
-      const data = await res.json();
-      setAuthEnabled(data.authEnabled);
+      const authData = await cachedFetch('/api/auth/check', async () => {
+        const res = await authFetch('/api/auth/check');
+        return res.json();
+      }) as { authEnabled: boolean };
+      setAuthEnabled(authData.authEnabled);
     } catch {
       // ignore
     } finally {
@@ -41,8 +44,10 @@ export function AuthSettingsSection() {
     }
 
     try {
-      const res = await authFetch('/api/config');
-      const data = await res.json();
+      const data = await cachedFetch('/api/config', async () => {
+        const res = await authFetch('/api/config');
+        return res.json();
+      }) as { server?: { auth?: { username?: string } } };
       const username = data.server?.auth?.username || 'admin';
       setCurrentUsername(username);
       setFormUsername(username);
@@ -82,6 +87,8 @@ export function AuthSettingsSection() {
         if (data.token) {
           setAuthToken(data.token);
         }
+        // 密码/用户名已变更，使相关缓存失效
+        invalidateCache('/api/config', '/api/auth/check');
         setSuccessMsg(t('auth.success'));
         setCurrentUsername(formUsername.trim() || currentUsername);
         setCurrentPassword('');

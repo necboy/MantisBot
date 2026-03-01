@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, Star, Edit2 } from 'lucide-react';
 import { ModelFormModal, MODEL_PROVIDERS } from './ModelFormModal';
 import { authFetch } from '../utils/auth';
+import { cachedFetch, invalidateCache } from '../utils/configCache';
 
 interface Model {
   name: string;
@@ -48,9 +49,11 @@ export function ModelConfigSection() {
     try {
       setLoading(true);
       setError(null);
-      const res = await authFetch('/api/models');
-      if (!res.ok) throw new Error('Failed to fetch models');
-      const data = await res.json();
+      const data = await cachedFetch('/api/models', async () => {
+        const res = await authFetch('/api/models');
+        if (!res.ok) throw new Error('Failed to fetch models');
+        return res.json();
+      }) as { models: Model[]; defaultModel: string | null };
       setModels(data.models || []);
       setDefaultModel(data.defaultModel || null);
     } catch (err) {
@@ -72,6 +75,7 @@ export function ModelConfigSection() {
         method: 'DELETE'
       });
       if (!res.ok) throw new Error('Failed to delete model');
+      invalidateCache('/api/models');
       await fetchModels();
     } catch (err) {
       console.error('Failed to delete model:', err);
@@ -90,6 +94,7 @@ export function ModelConfigSection() {
         body: JSON.stringify({ name: modelName }),
       });
       if (!res.ok) throw new Error('Failed to set default model');
+      invalidateCache('/api/models');
       setDefaultModel(modelName);
     } catch (err) {
       console.error('Failed to set default model:', err);
@@ -230,6 +235,8 @@ export function ModelConfigSection() {
               throw new Error(errorData.error || `Failed to ${isEdit ? 'update' : 'create'} model`);
             }
 
+            // 写操作完成后失效缓存，确保下次 fetchModels 拿到最新数据
+            invalidateCache('/api/models');
             // Refresh models list and close modal
             await fetchModels();
             setModalOpen(false);

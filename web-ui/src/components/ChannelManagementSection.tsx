@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ChannelFormModal } from './ChannelFormModal';
 import { authFetch } from '../utils/auth';
+import { cachedFetch, invalidateCache } from '../utils/configCache';
 
 interface ChannelField {
   key: string;
@@ -57,8 +58,10 @@ export function ChannelManagementSection({ isOpen }: ChannelManagementSectionPro
 
   async function fetchChannels() {
     try {
-      const res = await authFetch('/api/channels');
-      const data = await res.json();
+      const data = await cachedFetch('/api/channels', async () => {
+        const res = await authFetch('/api/channels');
+        return res.json();
+      }) as { channels: Channel[] };
       setChannels(data.channels);
     } catch (err) {
       console.error('Failed to fetch channels:', err);
@@ -67,8 +70,10 @@ export function ChannelManagementSection({ isOpen }: ChannelManagementSectionPro
 
   async function fetchDefinitions() {
     try {
-      const res = await authFetch('/api/channels/definitions');
-      const data = await res.json();
+      const data = await cachedFetch('/api/channels/definitions', async () => {
+        const res = await authFetch('/api/channels/definitions');
+        return res.json();
+      }) as { definitions: ChannelDefinition[] };
       setDefinitions(data.definitions);
     } catch (err) {
       console.error('Failed to fetch definitions:', err);
@@ -125,6 +130,7 @@ export function ChannelManagementSection({ isOpen }: ChannelManagementSectionPro
     setLoading(true);
     try {
       await authFetch(`/api/channels/${id}`, { method: 'DELETE' });
+      invalidateCache('/api/channels');
       setChannels(prev => prev.filter(c => c.id !== id));
     } catch (err) {
       console.error('Failed to delete channel:', err);
@@ -151,6 +157,7 @@ export function ChannelManagementSection({ isOpen }: ChannelManagementSectionPro
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
+      invalidateCache('/api/channels');
       await fetchChannels();
       setIsModalOpen(false);
     } catch (err) {

@@ -5,6 +5,7 @@ import { useState, useEffect } from 'react';
 import { Globe, Eye, EyeOff, CheckCircle, AlertCircle, Trash2, ExternalLink } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { authFetch } from '../utils/auth';
+import { cachedFetch, invalidateCache } from '../utils/configCache';
 
 export function FirecrawlSettingsSection() {
   const { t } = useTranslation();
@@ -22,8 +23,10 @@ export function FirecrawlSettingsSection() {
 
   async function fetchStatus() {
     try {
-      const res = await authFetch('/api/config/firecrawl');
-      const data = await res.json();
+      const data = await cachedFetch('/api/config/firecrawl', async () => {
+        const res = await authFetch('/api/config/firecrawl');
+        return res.json();
+      }) as { configured: boolean };
       setConfigured(data.configured);
     } catch {
       // ignore
@@ -52,6 +55,7 @@ export function FirecrawlSettingsSection() {
       const data = await res.json();
       if (res.ok) {
         setConfigured(data.configured);
+        invalidateCache('/api/config/firecrawl');
         setApiKey('');
         setSuccessMsg(t('firecrawl.saveSuccess'));
       } else {
@@ -77,6 +81,7 @@ export function FirecrawlSettingsSection() {
       const data = await res.json();
       if (res.ok) {
         setConfigured(data.configured);
+        invalidateCache('/api/config/firecrawl');
         setSuccessMsg(t('firecrawl.clearSuccess'));
       } else {
         setErrorMsg(data.error || t('firecrawl.clearFailed'));

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Plus, Trash2, Star, Edit2, Mail, CheckCircle, XCircle, Wifi, ToggleLeft, ToggleRight } from 'lucide-react';
 import { EmailFormModal, EMAIL_PROVIDERS } from './EmailFormModal';
 import { authFetch } from '../utils/auth';
+import { cachedFetch, invalidateCache } from '../utils/configCache';
 
 interface EmailAccount {
   id: string;
@@ -65,9 +66,11 @@ export function EmailConfigSection() {
     try {
       setLoading(true);
       setError(null);
-      const res = await authFetch('/api/email/config');
-      if (!res.ok) throw new Error('Failed to fetch email config');
-      const data = await res.json();
+      const data = await cachedFetch('/api/email/config', async () => {
+        const res = await authFetch('/api/email/config');
+        if (!res.ok) throw new Error('Failed to fetch email config');
+        return res.json();
+      }) as { enabled: boolean; accounts: EmailAccount[]; defaultAccountId?: string };
       setConfig({
         enabled: data.enabled || false,
         accounts: data.accounts || [],
@@ -92,6 +95,7 @@ export function EmailConfigSection() {
         method: 'DELETE'
       });
       if (!res.ok) throw new Error('Failed to delete account');
+      invalidateCache('/api/email/config');
       await fetchConfig();
       // 清除测试结果
       setTestResults(prev => {
@@ -114,6 +118,7 @@ export function EmailConfigSection() {
         method: 'PUT'
       });
       if (!res.ok) throw new Error('Failed to set default account');
+      invalidateCache('/api/email/config');
       await fetchConfig();
     } catch (err) {
       console.error('Failed to set default account:', err);
@@ -132,6 +137,7 @@ export function EmailConfigSection() {
         body: JSON.stringify({ enabled }),
       });
       if (!res.ok) throw new Error('Failed to toggle account');
+      invalidateCache('/api/email/config');
       await fetchConfig();
     } catch (err) {
       console.error('Failed to toggle account:', err);
@@ -391,6 +397,7 @@ export function EmailConfigSection() {
               throw new Error(errorData.error || `Failed to ${isEdit ? 'update' : 'create'} account`);
             }
 
+            invalidateCache('/api/email/config');
             await fetchConfig();
             setModalOpen(false);
             setEditingAccount(null);

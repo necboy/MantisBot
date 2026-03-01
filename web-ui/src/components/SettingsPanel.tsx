@@ -12,6 +12,7 @@ import { AuthSettingsSection } from './AuthSettingsSection';
 import { FirecrawlSettingsSection } from './FirecrawlSettingsSection';
 import { InstallSkillModal } from './InstallSkillModal';
 import { authFetch } from '../utils/auth';
+import { invalidateAllCache } from '../utils/configCache';
 
 interface Skill {
   name: string;
@@ -94,6 +95,8 @@ export function SettingsPanel({ isOpen, onClose }: SettingsPanelProps) {
     setReloadingConfig(true);
     try {
       await authFetch('/api/config/reload', { method: 'POST' });
+      // 服务端配置已从磁盘重载，清空前端所有缓存确保下次读取拿到最新数据
+      invalidateAllCache();
     } catch (err) {
       console.error('Failed to reload config:', err);
     } finally {

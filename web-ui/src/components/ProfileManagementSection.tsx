@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Check } from 'lucide-react';
 import { authFetch } from '../utils/auth';
+import { cachedFetch, invalidateCache } from '../utils/configCache';
 
 interface ProfileMeta {
   name: string;
@@ -37,8 +38,10 @@ export function ProfileManagementSection({ activeProfile, onProfileChange }: Pro
 
   async function fetchProfiles() {
     try {
-      const res = await authFetch('/api/profiles');
-      const data = await res.json();
+      const data = await cachedFetch('/api/profiles', async () => {
+        const res = await authFetch('/api/profiles');
+        return res.json();
+      }) as { profiles: ProfileMeta[]; activeProfile?: string };
       setProfiles(data.profiles);
       if (!selectedProfile && data.profiles.length > 0) {
         selectProfile(data.activeProfile || data.profiles[0].name);
@@ -72,6 +75,7 @@ export function ProfileManagementSection({ activeProfile, onProfileChange }: Pro
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(profileContent),
       });
+      invalidateCache('/api/profiles');
       await fetchProfiles();
     } catch (err) {
       console.error('Failed to save profile:', err);
@@ -92,6 +96,7 @@ export function ProfileManagementSection({ activeProfile, onProfileChange }: Pro
       });
       setNewProfileName('');
       setShowNewProfile(false);
+      invalidateCache('/api/profiles');
       await fetchProfiles();
       selectProfile(newProfileName);
     } catch (err) {
@@ -111,6 +116,7 @@ export function ProfileManagementSection({ activeProfile, onProfileChange }: Pro
         setSelectedProfile(null);
         setProfileContent(null);
       }
+      invalidateCache('/api/profiles');
       await fetchProfiles();
     } catch (err) {
       console.error('Failed to delete profile:', err);
