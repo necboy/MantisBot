@@ -10,6 +10,7 @@ gateway/dist/
 *.d.ts
 !src/types.d.ts
 !src/config/*.d.ts
+!web-ui/src/vite-env.d.ts
 !skills/**/*.js
 
 # Data and storage
