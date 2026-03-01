@@ -3,13 +3,6 @@ import type { ChannelMessage } from '../channel.interface.js';
 import QRCode from 'qrcode';
 
 const require = createRequire(import.meta.url);
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const whatsappWeb = require('whatsapp-web.js') as any;
-
-const Client = whatsappWeb.Client;
-const LocalAuth = whatsappWeb.LocalAuth;
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const Message = whatsappWeb.Message as any;
 
 interface WhatsAppClientOptions {
   onMessage: (message: ChannelMessage) => void;
@@ -24,6 +17,13 @@ export class WhatsAppClient {
   constructor(options: WhatsAppClientOptions) {
     this.onMessage = options.onMessage;
     const workspace = options.workspace || './data';
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const whatsappWeb = require('whatsapp-web.js') as any;
+    const Client = whatsappWeb.Client;
+    const LocalAuth = whatsappWeb.LocalAuth;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const Message = whatsappWeb.Message as any;
 
     this.client = new Client({
       authStrategy: new LocalAuth({
