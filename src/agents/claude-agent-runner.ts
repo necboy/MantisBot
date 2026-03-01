@@ -10,6 +10,7 @@ import type { PermissionResult } from '@anthropic-ai/claude-agent-sdk';
 import { getConfig } from '../config/loader.js';
 import { applyIsolatedEnv, buildIsolatedEnv } from '../env-isolation.js';
 import { getFileStorage } from '../files/storage.js';
+import { workDirManager } from '../workdir/manager.js';
 import { z } from 'zod';
 
 // 审批模式类型
@@ -224,9 +225,6 @@ export class ClaudeAgentRunner extends EventEmitter {
     }
   }
 
-  // 工作目录
-  private cwd: string;
-
   // 权限请求等待队列
   private pendingPermissions: Map<string, {
     resolve: (result: PermissionResult) => void;
@@ -242,7 +240,6 @@ export class ClaudeAgentRunner extends EventEmitter {
     this.toolRegistry = toolRegistry;
     this.skillsLoader = options.skillsLoader;
     this.pluginSkillsPrompt = options.pluginSkillsPrompt;  // 保存 plugin skills
-    this.cwd = options.cwd || process.cwd();
     this.claudeSessionId = options.claudeSessionId || null;
 
     // 兼容旧的 autoApprove 参数，转换为 approvalMode
@@ -494,8 +491,17 @@ export class ClaudeAgentRunner extends EventEmitter {
     const attachments: FileAttachment[] = [];
 
     // 应用环境变量隔离
-    // 使用当前配置的模型，确保 SDK 使用正确的 API 端点和模型
-    applyIsolatedEnv({ model: this.options.model });
+    // 查找当前模型的 apiKey 和 baseUrl，确保第三方 Anthropic-compatible 模型（如 MiniMax、GLM）
+    // 使用正确的 API 端点和凭证，而不是默认模型的配置
+    {
+      const config = getConfig();
+      const mc = config.models.find(m => m.name === this.options.model) as any;
+      applyIsolatedEnv({
+        model: this.options.model,
+        apiKey: mc?.apiKey,
+        baseUrl: mc?.baseURL || mc?.baseUrl || mc?.endpoint,
+      });
+    }
 
     // 检查是否启用 Firecrawl（优先）还是 WebFetch
     // 如果设置了 FIRECRAWL_API_KEY，使用 Firecrawl MCP 工具
@@ -503,11 +509,16 @@ export class ClaudeAgentRunner extends EventEmitter {
     const useFirecrawl = !!process.env.FIRECRAWL_API_KEY;
     console.log('[ClaudeAgentRunner] FIRECRAWL_API_KEY set:', useFirecrawl);
 
+    // 每次对话都动态读取当前工作目录（支持会话中途切换）
+    const currentCwd = workDirManager.getCurrentWorkDir();
+
     // 构建系统提示词
     let systemPrompt = this.options.systemPrompt;
     if (!systemPrompt) {
       systemPrompt = 'You are a helpful AI assistant.';
     }
+    // 将当前工作目录注入系统提示词，确保 Claude 始终感知到正确路径
+    systemPrompt = `${systemPrompt}\n\n## 当前工作目录\n${currentCwd}`;
 
     // 加载 Skills 提示词（如果提供了 skillsLoader）
     // 使用 enabledSkills 配置，只启用配置中的 skills
@@ -607,8 +618,8 @@ export class ClaudeAgentRunner extends EventEmitter {
       // 使用前端选择的模型（如 claude-sonnet-4-20250514）
       // 如果不传，SDK 会使用默认模型
       model: this.options.model,
-      // 工作目录
-      cwd: this.cwd,
+      // 工作目录（动态读取，支持会话中途切换）
+      cwd: currentCwd,
       // 使用 tools 指定可用工具（不使用 allowedTools，因为 allowedTools 会自动批准）
       // tools 只指定哪些工具可用，权限由 canUseTool 回调控制
       tools: [

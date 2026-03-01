@@ -19,8 +19,8 @@ import {
  * 判断模型是否使用 Claude Agent SDK
  *
  * 判断逻辑（按优先级）：
- * 1. protocol === 'anthropic' → 使用 Claude SDK
- * 2. provider === 'anthropic' → 使用 Claude SDK
+ * 1. protocol === 'anthropic' → 使用 Claude Agent SDK
+ * 2. provider === 'anthropic' → 使用 Claude Agent SDK
  * 3. 其他情况 → 使用 OpenAI 兼容模式
  */
 function isClaudeModel(modelName: string): boolean {

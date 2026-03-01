@@ -6,6 +6,7 @@ import { EventEmitter } from 'events';
 import { getLLMClient } from './llm-client.js';
 import { ToolRegistry } from './tools/registry.js';
 import { getConfig } from '../config/loader.js';
+import { workDirManager } from '../workdir/manager.js';
 import type { LLMMessage, FileAttachment, ToolInfo } from '../types.js';
 import {
   type StreamChunk,
@@ -401,13 +402,15 @@ export class OpenAICompatRunner extends EventEmitter {
   private buildMessages(userMessage: string, history: LLMMessage[]): LLMMessage[] {
     const messages: LLMMessage[] = [];
 
-    // 如果有自定义系统提示词，添加到开头
-    if (this.options.systemPrompt) {
-      messages.push({
-        role: 'system',
-        content: this.options.systemPrompt,
-      });
-    }
+    // 动态读取当前工作目录，注入系统提示词
+    const currentCwd = workDirManager.getCurrentWorkDir();
+    const basePrompt = this.options.systemPrompt || '';
+    const systemContent = `${basePrompt}\n\n## 当前工作目录\n${currentCwd}`.trimStart();
+
+    messages.push({
+      role: 'system',
+      content: systemContent,
+    });
 
     // 添加历史记录（过滤无效的 tool 消息）
     const filteredHistory = this.filterInvalidToolMessages(history);

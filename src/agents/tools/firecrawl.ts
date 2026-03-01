@@ -34,10 +34,6 @@ export const firecrawlTool: Tool = {
       waitFor: {
         type: 'number',
         description: 'Wait for JavaScript to render (ms) (for scrape)'
-      },
-      output: {
-        type: 'string',
-        description: 'Output file path (optional, for saving results)'
       }
     },
     required: ['action']
@@ -58,7 +54,7 @@ export const firecrawlTool: Tool = {
     }
 
     const timestamp = Date.now();
-    let outputFile = params.output as string || `${outputDir}/firecrawl-${action}-${timestamp}`;
+    const outputFile = `${outputDir}/firecrawl-${action}-${timestamp}`;
 
     return new Promise((resolve, reject) => {
       const args: string[] = [];
