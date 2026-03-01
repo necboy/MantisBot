@@ -1030,6 +1030,108 @@ export async function createHTTPServer(options: HTTPServerOptions) {
     }
   });
 
+  // List all files in a skill directory
+  // GET /api/skills/:name/files
+  app.get('/api/skills/:name/files', (req, res) => {
+    try {
+      const skillName = req.params.name;
+      const loaded = options.skillsLoader.get(skillName);
+      if (!loaded) {
+        res.status(404).json({ error: `Skill not found: ${skillName}` });
+        return;
+      }
+      const skillDir = path.normalize(path.dirname(loaded.skill.filePath));
+      const files: string[] = [];
+      function walkDir(dir: string) {
+        const entries = fs.readdirSync(dir, { withFileTypes: true });
+        for (const entry of entries) {
+          const fullPath = path.join(dir, entry.name);
+          if (entry.isDirectory() && !entry.isSymbolicLink()) {
+            walkDir(fullPath);
+          } else if (!entry.isDirectory()) {
+            files.push(path.relative(skillDir, fullPath));
+          }
+        }
+      }
+      walkDir(skillDir);
+      res.json({ files });
+    } catch (error) {
+      console.error('[API] Failed to list skill files:', error);
+      res.status(500).json({ error: 'Failed to list skill files' });
+    }
+  });
+
+  // Read a specific file from a skill directory
+  // GET /api/skills/:name/file?path=relative/path
+  app.get('/api/skills/:name/file', async (req, res) => {
+    try {
+      const skillName = req.params.name;
+      const filePath = req.query.path as string;
+      if (!filePath) {
+        res.status(400).json({ error: 'Missing path query parameter' });
+        return;
+      }
+      const loaded = options.skillsLoader.get(skillName);
+      if (!loaded) {
+        res.status(404).json({ error: `Skill not found: ${skillName}` });
+        return;
+      }
+      const skillDir = path.normalize(path.dirname(loaded.skill.filePath));
+      const targetPath = path.normalize(path.resolve(skillDir, filePath));
+      if (!targetPath.startsWith(skillDir + path.sep)) {
+        res.status(403).json({ error: 'Access denied' });
+        return;
+      }
+      if (!fs.existsSync(targetPath)) {
+        res.status(404).json({ error: 'File not found' });
+        return;
+      }
+      const content = await fs.promises.readFile(targetPath, 'utf-8');
+      res.json({ content });
+    } catch (error) {
+      console.error('[API] Failed to read skill file:', error);
+      res.status(500).json({ error: 'Failed to read skill file' });
+    }
+  });
+
+  // Save a specific file in a skill directory
+  // PUT /api/skills/:name/file?path=relative/path
+  app.put('/api/skills/:name/file', async (req, res) => {
+    try {
+      const skillName = req.params.name;
+      const filePath = req.query.path as string;
+      const { content } = req.body as { content?: string };
+      if (!filePath) {
+        res.status(400).json({ error: 'Missing path query parameter' });
+        return;
+      }
+      if (content === undefined) {
+        res.status(400).json({ error: 'Missing content in request body' });
+        return;
+      }
+      const loaded = options.skillsLoader.get(skillName);
+      if (!loaded) {
+        res.status(404).json({ error: `Skill not found: ${skillName}` });
+        return;
+      }
+      const skillDir = path.normalize(path.dirname(loaded.skill.filePath));
+      const targetPath = path.normalize(path.resolve(skillDir, filePath));
+      if (!targetPath.startsWith(skillDir + path.sep)) {
+        res.status(403).json({ error: 'Access denied' });
+        return;
+      }
+      await fs.promises.writeFile(targetPath, content, 'utf-8');
+      // Hot-reload if SKILL.md was modified to update skill metadata
+      if (path.basename(targetPath) === 'SKILL.md') {
+        await options.skillsLoader.reload();
+      }
+      res.json({ success: true });
+    } catch (error) {
+      console.error('[API] Failed to save skill file:', error);
+      res.status(500).json({ error: 'Failed to save skill file' });
+    }
+  });
+
   // Commands API - 获取所有 plugin commands
   app.get('/api/commands', (_, res) => {
     try {

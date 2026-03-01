@@ -75,7 +75,8 @@ export const readSkillTool: Tool = {
     }
 
     // 安全检查：确保路径在 skills 或 plugins 目录下
-    const normalizedPath = path.normalize(location);
+    // 用 path.resolve 将相对路径转为绝对路径，再做前缀校验
+    const normalizedPath = path.resolve(location);
     const cwd = process.cwd();
     const skillsDir = path.normalize(path.join(cwd, 'skills'));
     const pluginsDir = path.normalize(path.join(cwd, 'plugins'));
