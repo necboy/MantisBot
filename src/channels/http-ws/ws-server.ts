@@ -26,6 +26,7 @@ const clientInfoMap = new Map<string, {
   userAgent: string;
   ip: string;
   connectedAt: number;
+  pingInterval?: NodeJS.Timeout;
 }>();
 
 export function createWSServer(server: Server, options: WSServerOptions) {
@@ -75,6 +76,22 @@ export function createWSServer(server: Server, options: WSServerOptions) {
       connectedAt: Date.now()
     });
 
+    // 设置心跳：每 25 秒发送一次 ping，保持连接活跃
+    // Nginx 默认超时 60 秒，25 秒 ping 可确保连接不被代理断开
+    const pingInterval = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.ping();
+      }
+    }, 25000);
+
+    // 存储 ping 以 interval便清理
+    clientInfoMap.get(clientId)!.pingInterval = pingInterval;
+
+    // 处理 pong 响应
+    ws.on('pong', () => {
+      // 连接正常收到 pong
+    });
+
     console.log(`[WSServer] Client connected: ${clientId}`);
     console.log(`[WSServer]   - Browser: ${browserInfo}`);
     console.log(`[WSServer]   - IP: ${ip}`);
@@ -116,7 +133,11 @@ export function createWSServer(server: Server, options: WSServerOptions) {
     });
 
     ws.on('close', () => {
+      // 清除心跳定时器
       const info = clientInfoMap.get(clientId);
+      if (info?.pingInterval) {
+        clearInterval(info.pingInterval);
+      }
       clientInfoMap.delete(clientId);
       console.log(`[WSServer] Client disconnected: ${clientId}`);
       if (info) {
