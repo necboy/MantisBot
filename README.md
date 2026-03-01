@@ -163,8 +163,49 @@ MantisBot's 40+ skills cover various aspects of work and life:
 |------------|---------|-------|
 | Node.js | **18.11+** | 22.x recommended (`--watch` requires 18.11+) |
 | npm | 8+ | Bundled with Node.js |
+| git | any | Required for cloning |
 
-#### Installation
+#### ⚡ Intelligent Installer (Recommended)
+
+The install scripts handle everything automatically: prerequisite checks, cloning, dependency installation, config setup, build, and launch.
+
+**macOS / Linux**
+
+```bash
+# One-liner (downloads and runs automatically)
+curl -fsSL https://raw.githubusercontent.com/necboy/MantisBot/main/install.sh | bash
+
+# Or run locally after cloning
+chmod +x install.sh && ./install.sh
+```
+
+**Windows** (PowerShell)
+
+```powershell
+# One-liner (downloads and runs automatically)
+irm https://raw.githubusercontent.com/necboy/MantisBot/main/install.ps1 | iex
+
+# Or run locally after cloning
+.\install.ps1
+
+# With options (local only — parameters cannot be passed via the one-liner)
+.\install.ps1 -Mirror              # Use npmmirror CDN (faster in China)
+.\install.ps1 -SkipBuild           # Skip build step
+.\install.ps1 -InstallDir "D:\MantisBot"  # Custom install directory
+```
+
+> **Windows execution policy:** The one-liner (`irm | iex`) bypasses execution policy by design. For local execution, if PowerShell blocks the script, the installer will fix this automatically. If it can't, run once manually:
+> ```powershell
+> Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+> ```
+
+Both scripts will prompt you to choose a start mode at the end: **dev mode** (hot-reload), **prod mode** (compiled), or **manual** (start later yourself).
+
+---
+
+#### Manual Installation
+
+If you prefer to set up manually:
 
 ```bash
 # Clone the repository
@@ -187,8 +228,6 @@ npm install
 > **Windows native module note**
 >
 > `wechaty` (WeChat channel) and `whatsapp-web.js` contain native C++ modules that require Visual Studio Build Tools to compile. They are declared as `optionalDependencies`, so `npm install` succeeds even if the build fails — these channels simply won't be available until the tools are installed. To enable them, install [Visual Studio C++ Build Tools](https://visualstudio.microsoft.com/visual-cpp-build-tools/).
-
-
 
 ```bash
 # Copy example config
@@ -464,10 +503,51 @@ MantisBot 的 40+ 技能可以覆盖工作和生活的方方面面，以下是�
 |------|---------|------|
 | Node.js | **18.11+** | 推荐 22.x，`--watch` 标志需要 18.11+ |
 | npm | 8+ | 随 Node.js 附带 |
+| git | 任意版本 | 克隆仓库必须 |
 
 > **Windows 用户**：推荐使用 [nvm-windows](https://github.com/coreybutler/nvm-windows) 管理 Node.js 版本。
 
-#### 安装
+#### ⚡ 智能安装脚本（推荐）
+
+安装脚本自动完成全流程：环境检查 → 克隆仓库 → 安装依赖 → 初始化配置 → 编译 → 启动。
+
+**macOS / Linux**
+
+```bash
+# 一键安装（自动下载并执行）
+curl -fsSL https://raw.githubusercontent.com/necboy/MantisBot/main/install.sh | bash
+
+# 或克隆后在项目目录内执行
+chmod +x install.sh && ./install.sh
+```
+
+**Windows**（PowerShell）
+
+```powershell
+# 一键安装（自动下载并执行）
+irm https://raw.githubusercontent.com/necboy/MantisBot/main/install.ps1 | iex
+
+# 或克隆后在项目目录内执行
+.\install.ps1
+
+# 可选参数（仅本地执行有效，一键命令不支持传参）
+.\install.ps1 -Mirror              # 使用 npmmirror 国内镜像加速下载
+.\install.ps1 -SkipBuild           # 跳过编译步骤
+.\install.ps1 -InstallDir "D:\MantisBot"  # 自定义安装目录
+```
+
+> **Windows 执行策略**：一键命令（`irm | iex`）本身不受执行策略限制。本地执行时若 PowerShell 提示策略受限，安装脚本会尝试自动修复。若无法自动修复，手动运行一次：
+> ```powershell
+> Set-ExecutionPolicy -Scope CurrentUser RemoteSigned
+> ```
+
+两个脚本在最后都会提示选择启动模式：**开发模式**（热重载）、**生产模式**（已编译）或**手动启动**（稍后自行启动）。
+
+---
+
+#### 手动安装
+
+如果你更倾向于手动配置：
 
 ```bash
 # 克隆仓库
