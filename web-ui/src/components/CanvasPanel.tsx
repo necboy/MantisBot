@@ -76,8 +76,18 @@ export function CanvasPanel({
   // 移动端检测（< 768px 即 Tailwind md 断点）
   const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
 
-  // 默认宽度为屏幕宽度的 40%（仅桌面端侧边栏使用）
-  const [width, setWidth] = useState(() => Math.floor(window.innerWidth * 0.4));
+  // 默认宽度为屏幕宽度的 40%（仅桌面端侧边栏使用），优先从 localStorage 读取
+  const [width, setWidth] = useState(() => {
+    try {
+      const saved = localStorage.getItem('canvas-panel-width');
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        const maxWidth = Math.floor(window.innerWidth * 0.8);
+        if (parsed >= 300 && parsed <= maxWidth) return parsed;
+      }
+    } catch {}
+    return Math.floor(window.innerWidth * 0.4);
+  });
 
   // 响应窗口大小变化，同步移动端判断和侧边栏宽度
   useEffect(() => {
@@ -210,7 +220,7 @@ export function CanvasPanel({
     <div
       className={isMobile
         ? 'fixed bottom-0 inset-x-0 z-40 h-[65vh] bg-white dark:bg-gray-900 rounded-t-2xl shadow-2xl flex flex-col animate-in slide-in-from-bottom duration-300'
-        : 'h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 flex flex-col shadow-xl flex-shrink-0'
+        : 'relative h-full bg-white dark:bg-gray-900 border-l border-gray-200 dark:border-gray-700 flex flex-col shadow-xl flex-shrink-0'
       }
       style={!isMobile ? { width: `${width}px`, minWidth: '300px' } : undefined}
     >
@@ -228,19 +238,23 @@ export function CanvasPanel({
       {/* 桌面端拖拽调整宽度 */}
       {!isMobile && (
       <div
-        className="absolute left-0 top-0 bottom-0 w-1 cursor-ew-resize hover:bg-primary-500 transition-colors"
+        className="absolute left-0 top-0 bottom-0 w-2 cursor-ew-resize hover:bg-primary-500/50 active:bg-primary-500 transition-colors z-10"
         onMouseDown={(e) => {
           const startX = e.clientX;
           const startWidth = width;
+          let lastWidth = startWidth;
           const onMouseMove = (e: MouseEvent) => {
             // 最小 300px，最大屏幕宽度的 80%
             const maxWidth = Math.floor(window.innerWidth * 0.8);
-            const newWidth = Math.max(300, Math.min(maxWidth, startWidth + e.clientX - startX));
+            const newWidth = Math.max(300, Math.min(maxWidth, startWidth - (e.clientX - startX)));
+            lastWidth = newWidth;
             setWidth(newWidth);
           };
           const onMouseUp = () => {
             document.removeEventListener('mousemove', onMouseMove);
             document.removeEventListener('mouseup', onMouseUp);
+            // 拖拽结束时持久化宽度
+            try { localStorage.setItem('canvas-panel-width', String(lastWidth)); } catch {}
           };
           document.addEventListener('mousemove', onMouseMove);
           document.addEventListener('mouseup', onMouseUp);

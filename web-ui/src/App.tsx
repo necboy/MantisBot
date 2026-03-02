@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Settings, Plus, Bot, FileText, Download, Image, Trash2, ExternalLink, Clock, LayoutDashboard, Wifi, FolderOpen, Square, CheckSquare, LogOut, Star, ChevronDown, ChevronRight } from 'lucide-react';
+import { MessageCircle, Settings, Plus, Bot, FileText, Download, Image, Trash2, ExternalLink, Clock, LayoutDashboard, Wifi, FolderOpen, Square, CheckSquare, LogOut, Star, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
 import { CanvasPanel, FileItem, BrowserSnapshot, TerminalOutput } from './components/CanvasPanel';
 import { CronPanel } from './components/CronPanel';
 import { TunnelPanel } from './components/TunnelPanel';
@@ -255,6 +255,11 @@ function App() {
 
   // 移动端侧边栏开关
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  // 桌面端侧边栏折叠状态（持久化）
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try { return localStorage.getItem('sidebar-collapsed') === 'true'; } catch { return false; }
+  });
 
   // 后端连接状态
   const [backendStatus, setBackendStatus] = useState<'checking' | 'connected' | 'reconnecting'>('checking');
@@ -1897,7 +1902,7 @@ function App() {
         </div>
       )}
 
-      <div className="h-screen flex overflow-hidden">
+      <div className="h-screen flex overflow-hidden relative">
         {/* 移动端侧边栏遮罩 */}
         {sidebarOpen && (
           <div
@@ -1913,7 +1918,7 @@ function App() {
           />
         )}
         {/* Sidebar */}
-        <aside className={`fixed md:relative inset-y-0 left-0 z-40 w-64 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full transform transition-transform duration-300 ease-in-out md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}`}>
+        <aside className={`fixed md:relative inset-y-0 left-0 z-40 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col h-full transition-all duration-300 ease-in-out md:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} ${sidebarCollapsed ? 'md:w-0 md:overflow-hidden md:border-r-0' : 'w-64'}`}>
         <div className="p-4 border-b border-gray-200 dark:border-gray-800 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-primary-600">
@@ -2175,6 +2180,20 @@ function App() {
           )}
         </div>
       </aside>
+
+        {/* 桌面端侧边栏折叠按钮 */}
+        <button
+          className="hidden md:flex items-center justify-center absolute left-0 top-1/2 -translate-y-1/2 z-50 w-4 h-10 bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-r-md shadow-sm hover:bg-gray-50 dark:hover:bg-gray-800 transition-all duration-300 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 flex-shrink-0"
+          style={{ left: sidebarCollapsed ? '0px' : '256px' }}
+          onClick={() => setSidebarCollapsed(v => {
+            const next = !v;
+            try { localStorage.setItem('sidebar-collapsed', String(next)); } catch {}
+            return next;
+          })}
+          title={sidebarCollapsed ? '展开侧边栏' : '折叠侧边栏'}
+        >
+          {sidebarCollapsed ? <ChevronRight className="w-3 h-3" /> : <ChevronLeft className="w-3 h-3" />}
+        </button>
 
         {/* Main content and Canvas container */}
         <div className="flex-1 flex h-full overflow-hidden min-w-0">
