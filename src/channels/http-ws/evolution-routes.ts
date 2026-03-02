@@ -8,11 +8,6 @@ import type { UserPreference } from '../../agents/preference-detector.js';
 
 const router = Router();
 
-// 初始化：加载存储的提议
-evolutionStore.load().catch(err => {
-  console.error('[Evolution API] Failed to load evolution store:', err);
-});
-
 // 获取所有演变提议
 router.get('/', async (req, res) => {
   try {
