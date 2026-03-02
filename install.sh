@@ -398,6 +398,56 @@ install_poppler() {
 }
 
 # ────────────────────────────────────────────────────────────
+# STEP 5d: 安装 pandoc（文档格式转换工具）
+# ────────────────────────────────────────────────────────────
+install_pandoc() {
+  step "安装 Pandoc / Installing Pandoc (Document Converter)"
+
+  if cmd_exists pandoc; then
+    ok "pandoc 已安装：$(pandoc --version 2>&1 | head -1)"
+    return
+  fi
+
+  info "正在安装 pandoc（文档格式转换工具，docx 技能所需）..."
+  echo ""
+
+  local IS_MAC=false
+  [[ "$(uname)" == "Darwin" ]] && IS_MAC=true
+
+  if $IS_MAC; then
+    if cmd_exists brew; then
+      if brew install pandoc; then
+        ok "pandoc 安装完成（macOS）"
+      else
+        warn "安装失败，请手动执行：brew install pandoc"
+      fi
+    else
+      warn "未找到 Homebrew，请先安装 Homebrew 再运行："
+      info "  /bin/bash -c \"\$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)\""
+      info "  然后执行：brew install pandoc"
+    fi
+  else
+    # Linux：尝试 apt-get，再尝试 yum
+    if cmd_exists apt-get; then
+      if sudo apt-get install -y pandoc 2>/dev/null; then
+        ok "pandoc 安装完成（apt）"
+      else
+        warn "apt 安装失败，请手动执行：sudo apt-get install -y pandoc"
+      fi
+    elif cmd_exists yum; then
+      if sudo yum install -y pandoc 2>/dev/null; then
+        ok "pandoc 安装完成（yum）"
+      else
+        warn "yum 安装失败，请手动执行：sudo yum install -y pandoc"
+      fi
+    else
+      warn "无法检测到包管理器，请手动安装 pandoc"
+      info "  参考：https://pandoc.org/installing.html"
+    fi
+  fi
+}
+
+# ────────────────────────────────────────────────────────────
 # STEP 6: 启动
 # ────────────────────────────────────────────────────────────
 start_project() {
@@ -485,6 +535,7 @@ main() {
   build_project
   install_playwright_browser
   install_poppler
+  install_pandoc
   start_project
 
   echo ""

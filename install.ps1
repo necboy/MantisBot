@@ -475,6 +475,66 @@ function Install-Poppler {
 }
 
 # ------------------------------------------------------------
+# STEP 5d: Install Pandoc (document format converter)
+# 安装 Pandoc 文档格式转换工具
+# ------------------------------------------------------------
+function Install-Pandoc {
+    Write-Step "Installing Pandoc / 安装 Pandoc (Document Converter)"
+
+    if (Test-Cmd "pandoc") {
+        $ver = (& pandoc --version 2>&1) | Select-Object -First 1
+        Write-Ok "pandoc already installed: $ver"
+        return
+    }
+
+    Write-Info "Installing pandoc (document format converter, required for docx skill)..."
+    Write-Host ""
+
+    $installed = $false
+
+    # Try Chocolatey
+    if (Test-Cmd "choco") {
+        Write-Info "Using Chocolatey..."
+        & choco install pandoc -y 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "pandoc installed via Chocolatey"
+            $installed = $true
+        }
+    }
+
+    # Try Scoop
+    if (-not $installed -and (Test-Cmd "scoop")) {
+        Write-Info "Using Scoop..."
+        & scoop install pandoc 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "pandoc installed via Scoop"
+            $installed = $true
+        }
+    }
+
+    # Try winget
+    if (-not $installed -and (Test-Cmd "winget")) {
+        Write-Info "Using winget..."
+        & winget install --id JohnMacFarlane.Pandoc --silent --accept-package-agreements --accept-source-agreements 2>$null
+        if ($LASTEXITCODE -eq 0) {
+            Write-Ok "pandoc installed via winget"
+            $installed = $true
+        }
+    }
+
+    if (-not $installed) {
+        Write-Warn "Could not auto-install pandoc. Manual options:"
+        Write-Hr
+        Write-Info "  Chocolatey:  choco install pandoc"
+        Write-Info "  Scoop:       scoop install pandoc"
+        Write-Info "  winget:      winget install JohnMacFarlane.Pandoc"
+        Write-Info "  Installer:   https://pandoc.org/installing.html"
+        Write-Hr
+        Write-Info "Document conversion features (docx skill) may not work until pandoc is installed."
+    }
+}
+
+# ------------------------------------------------------------
 # STEP 6: Start
 # 启动
 # ------------------------------------------------------------
@@ -556,6 +616,7 @@ function Main {
     Build-MantisBot
     Install-PlaywrightBrowser
     Install-Poppler
+    Install-Pandoc
     Start-MantisBot
 
     Write-Host ""

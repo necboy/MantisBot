@@ -31,6 +31,8 @@ RUN apt-get update && apt-get install -y \
   fonts-noto-cjk \
   # PDF 文本提取工具
   poppler-utils \
+  # 文档格式转换工具（docx skill 使用）
+  pandoc \
   && rm -rf /var/lib/apt/lists/*
 
 # 创建 Python 虚拟环境目录（用于持久化用户安装的包）
