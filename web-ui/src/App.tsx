@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Settings, Plus, Bot, FileText, Download, Image, Trash2, ExternalLink, Clock, LayoutDashboard, Wifi, FolderOpen, Square, CheckSquare, LogOut, Star, ChevronDown, ChevronRight, ChevronLeft } from 'lucide-react';
+import { MessageCircle, Settings, Plus, Bot, FileText, Download, Image, Trash2, ExternalLink, Clock, LayoutDashboard, Wifi, FolderOpen, Square, CheckSquare, LogOut, Star, ChevronDown, ChevronRight, ChevronLeft, Terminal } from 'lucide-react';
 import { CanvasPanel, FileItem, BrowserSnapshot, TerminalOutput } from './components/CanvasPanel';
 import { CronPanel } from './components/CronPanel';
 import { TunnelPanel } from './components/TunnelPanel';
@@ -13,6 +13,8 @@ import { ModelConfigPrompt, useModelConfigCheck, markModelConfigPending, markMod
 import { LoginPage } from './components/LoginPage';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
 import { MessageBubble } from './components/MessageBubble';
+import { LogDrawer } from './components/LogDrawer';
+import type { LogEntry } from './components/LogDrawer';
 import { ToastContainer } from './components/Toast';
 import type { ToastItem } from './components/Toast';
 import { CommandPalette } from './components/CommandPalette';
@@ -247,6 +249,8 @@ function App() {
   const [currentFile, setCurrentFile] = useState<FileItem | null>(null);
   const [cronOpen, setCronOpen] = useState(false);
   const [tunnelOpen, setTunnelOpen] = useState(false);
+  const [logDrawerOpen, setLogDrawerOpen] = useState(false);
+  const [logEntries, setLogEntries] = useState<LogEntry[]>([]);
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
 
   // 批量选择删除
@@ -883,6 +887,14 @@ function App() {
             setSessions(prev => prev.map(s =>
               s.id === sessionId ? { ...s, name } : s
             ));
+          }
+
+          // 处理实时日志推送
+          if (data.type === 'log') {
+            setLogEntries(prev => {
+              const next = [...prev, data.payload as LogEntry];
+              return next.length > 1000 ? next.slice(next.length - 1000) : next;
+            });
           }
 
           // 处理 skill 使用事件
@@ -2258,6 +2270,20 @@ function App() {
               <Wifi className="w-4 h-4" />
               <span className="hidden md:inline">{t('app.intranetTunnel')}</span>
             </button>
+
+            {/* Log Drawer Button */}
+            <button
+              onClick={() => setLogDrawerOpen(v => !v)}
+              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border text-sm transition-colors ${
+                logDrawerOpen
+                  ? 'border-blue-400 bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400'
+                  : 'border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700'
+              }`}
+              title="运行日志"
+            >
+              <Terminal className="w-4 h-4" />
+              <span className="hidden md:inline">日志</span>
+            </button>
           </div>
         </div>
 
@@ -2558,6 +2584,14 @@ function App() {
 
       {/* Tunnel Panel */}
       <TunnelPanel isOpen={tunnelOpen} onClose={() => setTunnelOpen(false)} />
+
+      {/* Log Drawer */}
+      <LogDrawer
+        isOpen={logDrawerOpen}
+        onClose={() => setLogDrawerOpen(false)}
+        entries={logEntries}
+        onClear={() => setLogEntries([])}
+      />
 
       {/* Notification Panel */}
       <NotificationPanel

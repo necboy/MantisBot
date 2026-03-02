@@ -37,6 +37,7 @@ import { RetryManager } from './reliability/retry-manager.js';
 // import { ErrorMetrics } from './reliability/error-metrics.js';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { installLogInterceptor } from './utils/log-interceptor.js';
 
 export async function main(): Promise<void> {
   console.log('[MantisBot] Starting...');
@@ -257,6 +258,9 @@ export async function main(): Promise<void> {
 
   // Start channels
   await startChannels();
+
+  // 在 WebSocket 服务器启动后安装日志拦截器，将后续 console 输出实时推送到前端
+  installLogInterceptor();
 
   console.log('[MantisBot] Started successfully');
 
