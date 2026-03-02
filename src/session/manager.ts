@@ -85,6 +85,40 @@ export class SessionManager {
   }
 
   /**
+   * 删除单条消息
+   * @returns true 删除成功，false 会话或消息不存在
+   */
+  deleteMessage(sessionId: string, messageId: string): boolean {
+    const session = this.storage.get(sessionId);
+    if (!session) return false;
+
+    const index = session.messages.findIndex(m => m.id === messageId);
+    if (index === -1) return false;
+
+    session.messages.splice(index, 1);
+    this.updateSession(session);
+    return true;
+  }
+
+  /**
+   * 截断消息：删除指定消息及其之后的所有消息（用于重发场景）
+   * @param messageId 从该条消息开始截断（包含该条）
+   * @returns 被删除的消息数量，-1 表示会话或消息不存在
+   */
+  truncateFrom(sessionId: string, messageId: string): number {
+    const session = this.storage.get(sessionId);
+    if (!session) return -1;
+
+    const index = session.messages.findIndex(m => m.id === messageId);
+    if (index === -1) return -1;
+
+    const removedCount = session.messages.length - index;
+    session.messages = session.messages.slice(0, index);
+    this.updateSession(session);
+    return removedCount;
+  }
+
+  /**
    * 归档过期会话：清空消息但保留会话元数据
    *
    * 策略说明：

@@ -1,7 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageCircle, Settings, Plus, Bot, FileText, Download, Image, Trash2, ExternalLink, Clock, LayoutDashboard, Wifi, FolderOpen, Square, CheckSquare, LogOut, Star, ChevronDown, ChevronRight } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { CanvasPanel, FileItem, BrowserSnapshot, TerminalOutput } from './components/CanvasPanel';
 import { CronPanel } from './components/CronPanel';
 import { TunnelPanel } from './components/TunnelPanel';
@@ -14,7 +12,7 @@ import { SettingsPanel } from './components/SettingsPanel';
 import { ModelConfigPrompt, useModelConfigCheck, markModelConfigPending, markModelConfigured } from './components/ModelConfigPrompt';
 import { LoginPage } from './components/LoginPage';
 import { LanguageSwitcher } from './components/LanguageSwitcher';
-import { SkillChainDisplay } from './components/SkillChainDisplay';
+import { MessageBubble } from './components/MessageBubble';
 import { ToastContainer } from './components/Toast';
 import type { ToastItem } from './components/Toast';
 import { CommandPalette } from './components/CommandPalette';
@@ -1294,6 +1292,54 @@ function App() {
     }
   }
 
+  // ── 消息操作：删除单条消息 ──────────────────────────────────────────────────
+  async function handleDeleteMessage(msg: Message) {
+    if (!currentSession) return;
+    // 乐观更新前端状态
+    setMessages(prev => prev.filter(m => m.id !== msg.id));
+    try {
+      await authFetch(`/api/sessions/${currentSession}/messages/${msg.id}`, {
+        method: 'DELETE',
+      });
+    } catch (err) {
+      console.error('[App] Failed to delete message:', err);
+      // 删除失败时恢复（重新加载会话消息）
+      const res = await authFetch(`/api/sessions/${currentSession}`);
+      if (res.ok) {
+        const data = await res.json();
+        setMessages(data.messages || []);
+      }
+    }
+  }
+
+  // ── 消息操作：截断重发用户消息 ─────────────────────────────────────────────
+  async function handleResendMessage(msg: Message) {
+    if (!currentSession || loading) return;
+    const idx = messages.findIndex(m => m.id === msg.id);
+    if (idx === -1) return;
+
+    // 1. 乐观截断前端状态
+    setMessages(prev => prev.slice(0, idx));
+
+    // 2. 通知后端截断
+    try {
+      await authFetch(`/api/sessions/${currentSession}/messages/${msg.id}/truncate`, {
+        method: 'DELETE',
+      });
+    } catch (err) {
+      console.error('[App] Failed to truncate messages on backend:', err);
+      // 即使后端失败，也继续发送（前端已截断，下次加载会从后端同步）
+    }
+
+    // 3. 将原消息内容填入输入框并发送
+    setInput(msg.content);
+    // 使用 setTimeout 确保 setInput 已触发 re-render 后再调用 sendMessage
+    setTimeout(() => {
+      const form = document.querySelector<HTMLFormElement>('form[data-chat-form]');
+      form?.requestSubmit();
+    }, 0);
+  }
+
   async function sendMessage(e: React.FormEvent) {
     e.preventDefault();
     if (!input.trim() || loading) return;
@@ -2206,211 +2252,24 @@ function App() {
           ) : (
             <div className="space-y-4">
               {messages.map(msg => (
-                <div
+                <MessageBubble
                   key={msg.id}
-                  className={`flex gap-3 ${msg.role === 'user' ? 'flex-row-reverse' : ''}`}
-                >
-                  {/* 头像 */}
-                  <div className="flex-shrink-0">
-                    {msg.role === 'user' ? (
-                      <div className="w-8 h-8 rounded-full bg-primary-600 flex items-center justify-center text-white text-sm font-medium">
-                        U
-                      </div>
-                    ) : (
-                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500 to-blue-500 flex items-center justify-center text-white text-sm">
-                        🤖
-                      </div>
-                    )}
-                  </div>
-
-                  {/* 消息内容 */}
-                  <div className={`flex-1 min-w-0 ${msg.role === 'user' ? 'max-w-[80%] md:max-w-[70%]' : ''}`}>
-                    {/* 消息头 */}
-                    <div className={`flex items-center gap-2 mb-1 ${msg.role === 'user' ? 'justify-end' : ''}`}>
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {msg.role === 'user' ? '你' : '助手'}
-                      </span>
-                    </div>
-
-                    {/* 消息主体 */}
-                    <div
-                      className={`px-4 py-3 rounded-lg overflow-hidden ${
-                        msg.role === 'user'
-                          ? 'bg-primary-600 text-white'
-                          : 'bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700'
-                      }`}
-                    >
-                      {msg.role === 'user' ? (
-                        <div className="break-words whitespace-pre-wrap">{msg.content}</div>
-                      ) : (
-                        <div className="space-y-1">
-                          {/* 思考过程 - 紧凑单行折叠，Claude Code 风格 */}
-                          {msg.thinking && (
-                            <div className="text-sm">
-                              <button
-                                onClick={() => {
-                                  setExpandedThinking(prev => {
-                                    const next = new Set(prev);
-                                    if (next.has(msg.id)) { next.delete(msg.id); } else { next.add(msg.id); }
-                                    return next;
-                                  });
-                                }}
-                                className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors py-0.5"
-                              >
-                                <svg className={`w-3 h-3 transition-transform duration-150 ${expandedThinking.has(msg.id) ? 'rotate-90' : ''}`} fill="currentColor" viewBox="0 0 20 20">
-                                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                                </svg>
-                                <span className="text-xs italic">
-                                  {!msg.content ? (
-                                    <span className="flex items-center gap-1.5">
-                                      思考中
-                                      <span className="flex gap-0.5">
-                                        <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                                        <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                                        <span className="w-1 h-1 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-                                      </span>
-                                    </span>
-                                  ) : '思考过程'}
-                                </span>
-                              </button>
-                              {expandedThinking.has(msg.id) && (
-                                <div className="mt-1 ml-4 pl-3 border-l-2 border-gray-200 dark:border-gray-700">
-                                  <pre className="text-xs whitespace-pre-wrap text-gray-500 dark:text-gray-400 font-normal leading-relaxed max-h-48 overflow-y-auto">
-                                    {msg.thinking}
-                                    {!msg.content && (
-                                      <span className="inline-block w-1.5 h-3.5 bg-gray-400 animate-pulse ml-0.5 align-text-bottom" />
-                                    )}
-                                  </pre>
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {/* 工具调用展示 - 紧凑单行，Claude Code 风格 */}
-                          {msg.toolStatus && msg.toolStatus.length > 0 && (
-                            <div className="space-y-0.5">
-                              {msg.toolStatus.map((tool, idx) => {
-                                const isRunning = tool.status === 'start';
-                                const isError = tool.isError;
-                                const toolExpKey = `${msg.id}-tool-${idx}`;
-
-                                // remember 工具：渲染专属记忆徽章
-                                if (tool.tool === 'remember' && tool.status === 'end' && !isError) {
-                                  const remResult = tool.result as any;
-                                  const savedContent = remResult?.content || '';
-                                  const truncated = savedContent.length > 40 ? savedContent.slice(0, 40) + '…' : savedContent;
-                                  return (
-                                    <div key={idx} className="flex items-start gap-1.5 px-2 py-1.5 rounded-md border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/40">
-                                      <span className="text-xs mt-0.5 flex-shrink-0">📌</span>
-                                      <div className="min-w-0">
-                                        <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">已保存到记忆</span>
-                                        {truncated && (
-                                          <span className="text-xs text-indigo-500 dark:text-indigo-500 ml-1">"{truncated}"</span>
-                                        )}
-                                      </div>
-                                    </div>
-                                  );
-                                }
-
-                                const formatResult = (result: unknown): string => {
-                                  if (!result) return '';
-                                  if (typeof result === 'string') return result;
-                                  try { return JSON.stringify(result, null, 2); } catch { return String(result); }
-                                };
-
-                                const argsPreview = tool.args
-                                  ? formatToolArgs(tool.tool, tool.args).slice(0, 60) + (formatToolArgs(tool.tool, tool.args).length > 60 ? '…' : '')
-                                  : '';
-
-                                return (
-                                  <div key={idx} className="text-sm">
-                                    <button
-                                      onClick={() => {
-                                        setExpandedThinking(prev => {
-                                          const next = new Set(prev);
-                                          if (next.has(toolExpKey)) { next.delete(toolExpKey); } else { next.add(toolExpKey); }
-                                          return next;
-                                        });
-                                      }}
-                                      className="flex items-center gap-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors py-0.5 w-full text-left"
-                                    >
-                                      {isRunning ? (
-                                        <svg className="w-3 h-3 animate-spin text-blue-400 flex-shrink-0" fill="none" viewBox="0 0 24 24">
-                                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
-                                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
-                                        </svg>
-                                      ) : isError ? (
-                                        <span className="w-3 h-3 flex-shrink-0 text-red-400 text-xs leading-none">✗</span>
-                                      ) : (
-                                        <span className="w-3 h-3 flex-shrink-0 text-green-400 text-xs leading-none">✓</span>
-                                      )}
-                                      <svg className={`w-2.5 h-2.5 flex-shrink-0 transition-transform duration-150 ${expandedThinking.has(toolExpKey) ? 'rotate-90' : ''}`} fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                                      </svg>
-                                      <span className="text-xs font-mono truncate">
-                                        <span className={isError ? 'text-red-400' : isRunning ? 'text-blue-400' : 'text-gray-500 dark:text-gray-400'}>
-                                          {getToolDisplayName(tool.tool)}
-                                        </span>
-                                        {argsPreview && (
-                                          <span className="text-gray-400 dark:text-gray-600">({argsPreview})</span>
-                                        )}
-                                      </span>
-                                    </button>
-                                    {expandedThinking.has(toolExpKey) && (
-                                      <div className="mt-0.5 ml-4 pl-3 border-l-2 border-gray-200 dark:border-gray-700 space-y-1">
-                                        {tool.args && (
-                                          <pre className="text-xs text-gray-500 dark:text-gray-400 whitespace-pre-wrap break-words">
-                                            {formatToolArgs(tool.tool, tool.args)}
-                                          </pre>
-                                        )}
-                                        {tool.status === 'end' && (
-                                          <pre className={`text-xs whitespace-pre-wrap break-words max-h-40 overflow-y-auto ${isError ? 'text-red-400' : 'text-gray-400 dark:text-gray-500'}`}>
-                                            {formatResult(tool.result) || '(无输出)'}
-                                          </pre>
-                                        )}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          )}
-
-                          {/* 主内容 */}
-                          {/* 只有当有实际内容时才渲染，否则显示简洁的加载指示器 */}
-                          {msg.content.trim() || msg.thinking || (msg.toolStatus && msg.toolStatus.length > 0) ? (
-                            <div className="prose prose-sm dark:prose-invert max-w-none break-words [&_pre]:bg-gray-900 [&_pre]:p-3 [&_pre]:rounded-lg [&_pre]:overflow-x-auto [&_code]:text-sm [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_table]:block [&_table]:w-full [&_table]:overflow-x-auto [&_th]:whitespace-nowrap [&_td]:whitespace-nowrap">
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {msg.content}
-                              </ReactMarkdown>
-                            </div>
-                          ) : (
-                            /* 等待响应时的加载指示器 - 简洁的三个点动画 */
-                            <div className="flex items-center gap-1.5 py-1">
-                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '0ms' }} />
-                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '150ms' }} />
-                              <span className="w-1.5 h-1.5 rounded-full bg-gray-400 animate-bounce" style={{ animationDelay: '300ms' }} />
-                            </div>
-                          )}
-
-                          {/* 附件 */}
-                          {msg.attachments && msg.attachments.length > 0 && (
-                            <div className="space-y-2">
-                              {msg.attachments.map(attachment => (
-                                <FileAttachmentCard key={attachment.id} attachment={attachment} onOpenCanvas={() => openCanvasFromAttachment(attachment)} />
-                              ))}
-                            </div>
-                          )}
-
-                          {/* 技能调用链展示 */}
-                          {msg.skillChain && msg.skillChain.length > 0 && (
-                            <SkillChainDisplay skills={msg.skillChain} />
-                          )}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </div>
+                  msg={msg}
+                  expandedThinking={expandedThinking}
+                  onToggleExpand={(key) => {
+                    setExpandedThinking(prev => {
+                      const next = new Set(prev);
+                      if (next.has(key)) { next.delete(key); } else { next.add(key); }
+                      return next;
+                    });
+                  }}
+                  onOpenCanvas={openCanvasFromAttachment}
+                  onResend={handleResendMessage}
+                  onDelete={handleDeleteMessage}
+                  getToolDisplayName={getToolDisplayName}
+                  formatToolArgs={formatToolArgs}
+                  FileAttachmentCard={FileAttachmentCard}
+                />
               ))}
             </div>
           )}
@@ -2507,7 +2366,7 @@ function App() {
             </div>
           )}
 
-          <form onSubmit={sendMessage} className="flex gap-2">
+          <form onSubmit={sendMessage} data-chat-form className="flex gap-2">
             <input
               type="text"
               value={input}

@@ -39,6 +39,13 @@
     "download": "下载文件",
     "referencedFiles": "引用的文件/目录"
   },
+  "message": {
+    "resend": "重新发送",
+    "delete": "删除消息",
+    "copy": "复制",
+    "copied": "已复制",
+    "confirmDelete": "确定删除这条消息吗？"
+  },
   "tool": {
     "read": "读取文件",
     "write": "写入文件",

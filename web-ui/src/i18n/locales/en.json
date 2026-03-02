@@ -39,6 +39,13 @@
     "download": "Download",
     "referencedFiles": "Referenced Files/Directories"
   },
+  "message": {
+    "resend": "Resend",
+    "delete": "Delete",
+    "copy": "Copy",
+    "copied": "Copied",
+    "confirmDelete": "Delete this message?"
+  },
   "tool": {
     "read": "Read File",
     "write": "Write File",

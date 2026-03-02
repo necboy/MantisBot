@@ -319,6 +319,36 @@ export async function createHTTPServer(options: HTTPServerOptions) {
     }
   });
 
+  // Delete a single message from a session
+  app.delete('/api/sessions/:id/messages/:msgId', (req, res) => {
+    try {
+      const { id, msgId } = req.params;
+      const deleted = options.sessionManager.deleteMessage(id, msgId);
+      if (!deleted) {
+        return res.status(404).json({ error: 'Session or message not found' });
+      }
+      res.status(204).send();
+    } catch (error) {
+      console.error('[HTTPServer] Delete message error:', error);
+      res.status(500).json({ error: 'Failed to delete message' });
+    }
+  });
+
+  // Truncate session messages from a given message onward (for resend)
+  app.delete('/api/sessions/:id/messages/:msgId/truncate', (req, res) => {
+    try {
+      const { id, msgId } = req.params;
+      const removed = options.sessionManager.truncateFrom(id, msgId);
+      if (removed === -1) {
+        return res.status(404).json({ error: 'Session or message not found' });
+      }
+      res.json({ removed });
+    } catch (error) {
+      console.error('[HTTPServer] Truncate messages error:', error);
+      res.status(500).json({ error: 'Failed to truncate messages' });
+    }
+  });
+
   // Create session
   app.post('/api/sessions', (req, res) => {
     const { name, model, approvalMode } = req.body;
