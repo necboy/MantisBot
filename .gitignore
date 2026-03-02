@@ -66,3 +66,4 @@ pnpm-lock.yaml
 config/config.json
 docker-compose-prebuild.yaml
 docker-compose-release.yaml
+docs/plans/
