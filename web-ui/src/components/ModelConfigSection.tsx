@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, Star, Edit2 } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { ModelFormModal, MODEL_PROVIDERS } from './ModelFormModal';
 import { authFetch } from '../utils/auth';
 import { cachedFetch, invalidateCache } from '../utils/configCache';
@@ -33,6 +34,7 @@ function getProtocolDisplayName(model: Model): string {
 }
 
 export function ModelConfigSection() {
+  const { t } = useTranslation();
   const [models, setModels] = useState<Model[]>([]);
   const [defaultModel, setDefaultModel] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -137,11 +139,11 @@ export function ModelConfigSection() {
 
       {loading && models.length === 0 ? (
         <div className="flex items-center justify-center h-32 text-gray-500">
-          加载中...
+          {t('common.loading')}
         </div>
       ) : models.length === 0 ? (
         <div className="flex items-center justify-center h-32 text-gray-500">
-          暂无配置模型，点击「添加模型」开始配置
+          {t('modelConfig.noModels', '暂无配置模型，点击「添加模型」开始配置')}
         </div>
       ) : (
         <div className="space-y-3">

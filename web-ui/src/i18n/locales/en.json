@@ -21,7 +21,8 @@
   },
   "backend": {
     "checking": "Connecting to backend...",
-    "reconnecting": "Backend may be restarting, retrying in 5 seconds..."
+    "reconnecting": "Backend may be restarting, retrying in 5 seconds",
+    "connectionFailed": "Backend connection failed: {{error}}"
   },
   "notification": {
     "cronNotification": "Cron Notifications"
@@ -40,11 +41,31 @@
     "referencedFiles": "Referenced Files/Directories"
   },
   "message": {
+    "you": "You",
+    "assistant": "Assistant",
     "resend": "Resend",
     "delete": "Delete",
     "copy": "Copy",
     "copied": "Copied",
-    "confirmDelete": "Delete this message?"
+    "confirmDelete": "Delete this message?",
+    "thinking": "Thinking...",
+    "thinkingProcess": "Thinking Process",
+    "thinkingCollapsed": "Thinking Process (collapsed)"
+  },
+  "common": {
+    "loading": "Loading...",
+    "saving": "Saving...",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "add": "Add",
+    "edit": "Edit",
+    "confirm": "Confirm",
+    "enabled": "Enabled",
+    "disabled": "Disabled",
+    "noData": "No data",
+    "saveAndEnable": "Save & Enable",
+    "disable": "Disable this service"
   },
   "tool": {
     "read": "Read File",
@@ -84,6 +105,10 @@
     "auth": "Auth",
     "firecrawl": "Firecrawl",
     "reloadConfig": "Reload Config"
+  },
+  "modelConfig": {
+    "noModels": "No models configured yet. Click \"Add Model\" to get started.",
+    "addModel": "Add Model"
   },
   "auth": {
     "title": "Access Authentication",
@@ -240,6 +265,7 @@
     "enabled": "Enabled",
     "disabled": "Disabled",
     "searchPlaceholder": "Search skills...",
+    "reload": "Reload",
     "install": {
       "title": "Install Skill from GitHub",
       "shortLabel": "Install",

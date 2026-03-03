@@ -239,7 +239,7 @@ export function SkillManagementSection({
             title="重新加载 skills（无需重启服务）"
           >
             <RotateCw className={`w-4 h-4 ${reloading ? 'animate-spin' : ''}`} />
-            {!selectedSkill && <span className="hidden sm:inline">{reloading ? '加载中...' : '重新加载'}</span>}
+            {!selectedSkill && <span className="hidden sm:inline">{reloading ? t('common.loading') : t('skills.reload')}</span>}
           </button>
 
           {/* View Mode Toggle */}

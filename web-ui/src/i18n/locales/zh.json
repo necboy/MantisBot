@@ -21,7 +21,8 @@
   },
   "backend": {
     "checking": "正在连接后端服务...",
-    "reconnecting": "后端服务可能正在重启，5 秒后自动重试..."
+    "reconnecting": "后端服务可能正在重启，5 秒后自动重试",
+    "connectionFailed": "后端连接失败：{{error}}"
   },
   "notification": {
     "cronNotification": "定时任务通知"
@@ -40,11 +41,31 @@
     "referencedFiles": "引用的文件/目录"
   },
   "message": {
+    "you": "你",
+    "assistant": "助手",
     "resend": "重新发送",
     "delete": "删除消息",
     "copy": "复制",
     "copied": "已复制",
-    "confirmDelete": "确定删除这条消息吗？"
+    "confirmDelete": "确定删除这条消息吗？",
+    "thinking": "思考中",
+    "thinkingProcess": "思考过程",
+    "thinkingCollapsed": "思考过程（已折叠）"
+  },
+  "common": {
+    "loading": "加载中...",
+    "saving": "保存中...",
+    "save": "保存",
+    "cancel": "取消",
+    "delete": "删除",
+    "add": "添加",
+    "edit": "编辑",
+    "confirm": "确认",
+    "enabled": "已启用",
+    "disabled": "未启用",
+    "noData": "暂无数据",
+    "saveAndEnable": "保存并启用",
+    "disable": "禁用此服务"
   },
   "tool": {
     "read": "读取文件",
@@ -84,6 +105,10 @@
     "auth": "访问鉴权",
     "firecrawl": "Firecrawl",
     "reloadConfig": "重载配置"
+  },
+  "modelConfig": {
+    "noModels": "暂无配置模型，点击「添加模型」开始配置",
+    "addModel": "添加模型"
   },
   "auth": {
     "title": "访问鉴权",
@@ -240,6 +265,7 @@
     "enabled": "已启用",
     "disabled": "已禁用",
     "searchPlaceholder": "搜索 skills...",
+    "reload": "重新加载",
     "install": {
       "title": "从 GitHub 安装 Skill",
       "shortLabel": "安装",

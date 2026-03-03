@@ -411,14 +411,14 @@ export function MessageBubble({
           <span className="text-xs font-medium text-sky-700 dark:text-sky-300 flex-1 text-left">
             {isActive ? (
               <span className="flex items-center gap-1.5">
-                思考中
+                {t('message.thinking')}
                 <span className="flex gap-0.5 items-center">
                   <span className="wave-dot w-1 h-1 rounded-full bg-primary-400 inline-block" />
                   <span className="wave-dot w-1 h-1 rounded-full bg-primary-400 inline-block" />
                   <span className="wave-dot w-1 h-1 rounded-full bg-primary-400 inline-block" />
                 </span>
               </span>
-            ) : isOpen ? '思考过程' : '思考过程（已折叠）'}
+            ) : isOpen ? t('message.thinkingProcess') : t('message.thinkingCollapsed')}
           </span>
           <svg
             className={`w-3.5 h-3.5 text-primary-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}

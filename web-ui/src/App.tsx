@@ -1930,7 +1930,7 @@ function App() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
-            {t('backend.checking') || '正在连接后端服务...'}
+            {t('backend.checking')}
           </div>
         </div>
       )}
@@ -1942,7 +1942,7 @@ function App() {
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
             </svg>
-            {healthError ? `后端连接失败：${healthError}` : (t('backend.reconnecting') || '后端服务可能正在重启')}，5 秒后自动重试{retryCount > 1 ? ` (${retryCount})` : ''}
+            {healthError ? t('backend.connectionFailed', { error: healthError }) : t('backend.reconnecting')}{retryCount > 1 ? ` (${retryCount})` : ''}
           </div>
         </div>
       )}
