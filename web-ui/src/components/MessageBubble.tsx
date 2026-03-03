@@ -127,21 +127,21 @@ function getToolTheme(toolName: string, isError: boolean): ToolTheme {
   if (name.startsWith('browser')) {
     return {
       icon: '🌐',
-      dotColor: 'bg-violet-500',
-      lineColor: 'bg-violet-200 dark:bg-violet-800/60',
-      badgeBg: 'bg-violet-50 dark:bg-violet-950/40 border border-violet-200 dark:border-violet-800',
-      badgeText: 'text-violet-700 dark:text-violet-300',
-      runningText: 'text-violet-500',
+      dotColor: 'bg-primary-500',
+      lineColor: 'bg-sky-200 dark:bg-sky-800/60',
+      badgeBg: 'bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800',
+      badgeText: 'text-sky-700 dark:text-sky-300',
+      runningText: 'text-primary-500',
     };
   }
   if (name === 'memory_search' || name === 'remember') {
     return {
       icon: '🔍',
-      dotColor: 'bg-indigo-500',
-      lineColor: 'bg-indigo-200 dark:bg-indigo-800/60',
-      badgeBg: 'bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800',
-      badgeText: 'text-indigo-700 dark:text-indigo-300',
-      runningText: 'text-indigo-500',
+      dotColor: 'bg-primary-500',
+      lineColor: 'bg-sky-200 dark:bg-sky-800/60',
+      badgeBg: 'bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800',
+      badgeText: 'text-sky-700 dark:text-sky-300',
+      runningText: 'text-primary-500',
     };
   }
   return {
@@ -189,7 +189,7 @@ export function MessageBubble({
   // ── 头像 ─────────────────────────────────────────────────────────────────────
 
   const UserAvatar = (
-    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white dark:ring-gray-900 shadow-sm flex-shrink-0">
+    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-500 to-sky-600 flex items-center justify-center text-white text-sm font-semibold ring-2 ring-white dark:ring-gray-900 shadow-sm flex-shrink-0">
       U
     </div>
   );
@@ -197,7 +197,7 @@ export function MessageBubble({
   const AssistantAvatar = (
     <div className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ring-2 ring-white dark:ring-gray-900 shadow-sm
       ${isStreaming
-        ? 'bg-gradient-to-br from-slate-700 to-slate-900 ring-violet-400/60 dark:ring-violet-500/40 animate-pulse'
+        ? 'bg-gradient-to-br from-slate-700 to-slate-900 ring-primary-400/60 dark:ring-primary-500/40 animate-pulse'
         : 'bg-gradient-to-br from-slate-700 to-slate-900'
       }`}
     >
@@ -220,7 +220,7 @@ export function MessageBubble({
       <button
         onClick={() => onResend(msg)}
         title={t('message.resend')}
-        className="p-1.5 rounded-lg text-gray-400 hover:text-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-950/40 transition-colors"
+        className="p-1.5 rounded-lg text-gray-400 hover:text-primary-500 hover:bg-sky-50 dark:hover:bg-sky-950/40 transition-colors"
       >
         <RotateCcw className="w-3.5 h-3.5" />
       </button>
@@ -290,16 +290,16 @@ export function MessageBubble({
           return (
             <div key={idx} className="flex gap-2.5">
               <div className="flex flex-col items-center flex-shrink-0" style={{ width: 18 }}>
-                <div className="w-3 h-3 rounded-full bg-indigo-500 flex-shrink-0 mt-0.5" />
-                {!isLast && <div className="w-0.5 flex-1 mt-1 bg-indigo-200 dark:bg-indigo-800/60 min-h-[12px]" />}
+                <div className="w-3 h-3 rounded-full bg-primary-500 flex-shrink-0 mt-0.5" />
+                {!isLast && <div className="w-0.5 flex-1 mt-1 bg-sky-200 dark:bg-sky-800/60 min-h-[12px]" />}
               </div>
               <div className={`flex-1 pb-${isLast ? '0' : '2'} min-w-0 mb-1.5`}>
-                <div className="flex items-start gap-1.5 px-2.5 py-1.5 rounded-lg border border-indigo-300 dark:border-indigo-700 bg-indigo-50 dark:bg-indigo-950/40">
+                <div className="flex items-start gap-1.5 px-2.5 py-1.5 rounded-lg border border-sky-300 dark:border-sky-700 bg-sky-50 dark:bg-sky-950/40">
                   <span className="text-xs mt-0.5 flex-shrink-0">📌</span>
                   <div className="min-w-0">
-                    <span className="text-xs font-medium text-indigo-600 dark:text-indigo-400">已保存到记忆</span>
+                    <span className="text-xs font-medium text-primary-600 dark:text-primary-400">已保存到记忆</span>
                     {truncated && (
-                      <span className="text-xs text-indigo-500 dark:text-indigo-500 ml-1">"{truncated}"</span>
+                      <span className="text-xs text-primary-500 dark:text-primary-500 ml-1">"{truncated}"</span>
                     )}
                   </div>
                 </div>
@@ -401,27 +401,27 @@ export function MessageBubble({
     const isActive = !msg.content;
 
     return (
-      <div className="mb-2 rounded-xl border border-violet-200 dark:border-violet-800/50 bg-violet-50/60 dark:bg-violet-950/20 overflow-hidden">
+      <div className="mb-2 rounded-xl border border-sky-200 dark:border-sky-800/50 bg-sky-50/60 dark:bg-sky-950/20 overflow-hidden">
         {/* 标题栏 */}
         <button
           onClick={() => onToggleExpand(msg.id)}
-          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-violet-100/50 dark:hover:bg-violet-900/20 transition-colors"
+          className="w-full flex items-center gap-2 px-3 py-2 hover:bg-sky-100/50 dark:hover:bg-sky-900/20 transition-colors"
         >
           <span className="text-base leading-none select-none">🧠</span>
-          <span className="text-xs font-medium text-violet-700 dark:text-violet-300 flex-1 text-left">
+          <span className="text-xs font-medium text-sky-700 dark:text-sky-300 flex-1 text-left">
             {isActive ? (
               <span className="flex items-center gap-1.5">
                 思考中
                 <span className="flex gap-0.5 items-center">
-                  <span className="wave-dot w-1 h-1 rounded-full bg-violet-400 inline-block" />
-                  <span className="wave-dot w-1 h-1 rounded-full bg-violet-400 inline-block" />
-                  <span className="wave-dot w-1 h-1 rounded-full bg-violet-400 inline-block" />
+                  <span className="wave-dot w-1 h-1 rounded-full bg-primary-400 inline-block" />
+                  <span className="wave-dot w-1 h-1 rounded-full bg-primary-400 inline-block" />
+                  <span className="wave-dot w-1 h-1 rounded-full bg-primary-400 inline-block" />
                 </span>
               </span>
             ) : isOpen ? '思考过程' : '思考过程（已折叠）'}
           </span>
           <svg
-            className={`w-3.5 h-3.5 text-violet-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
+            className={`w-3.5 h-3.5 text-primary-400 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}
             fill="currentColor" viewBox="0 0 20 20"
           >
             <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
@@ -430,8 +430,8 @@ export function MessageBubble({
 
         {/* 呼吸进度条（仅流式时显示） */}
         {isActive && (
-          <div className="relative h-0.5 bg-violet-100 dark:bg-violet-900/40 overflow-hidden mx-3 mb-1 rounded-full">
-            <div className="thinking-bar absolute inset-y-0 left-0 bg-violet-400 dark:bg-violet-500 rounded-full" />
+          <div className="relative h-0.5 bg-sky-100 dark:bg-sky-900/40 overflow-hidden mx-3 mb-1 rounded-full">
+            <div className="thinking-bar absolute inset-y-0 left-0 bg-primary-400 dark:bg-primary-500 rounded-full" />
           </div>
         )}
 
@@ -439,10 +439,10 @@ export function MessageBubble({
         <div className={`thinking-collapsible ${isOpen ? 'open' : ''}`}>
           <div>
             <div className="px-3 pb-3 pt-1">
-              <pre className="text-xs text-violet-600/80 dark:text-violet-400/70 whitespace-pre-wrap font-normal leading-relaxed italic max-h-52 overflow-y-auto">
+              <pre className="text-xs text-sky-600/80 dark:text-primary-400/70 whitespace-pre-wrap font-normal leading-relaxed italic max-h-52 overflow-y-auto">
                 {msg.thinking}
                 {isActive && (
-                  <span className="inline-block w-1.5 h-3.5 bg-violet-400 animate-pulse ml-0.5 align-text-bottom rounded-sm" />
+                  <span className="inline-block w-1.5 h-3.5 bg-primary-400 animate-pulse ml-0.5 align-text-bottom rounded-sm" />
                 )}
               </pre>
             </div>
@@ -473,7 +473,7 @@ export function MessageBubble({
 
         {/* ── 用户气泡 ── */}
         {isUser ? (
-          <div className="relative px-4 py-3 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-sm overflow-hidden">
+          <div className="relative px-4 py-3 rounded-2xl bg-gradient-to-br from-primary-500 to-sky-600 text-white shadow-sm overflow-hidden">
             {/* grain 质感叠层 */}
             <div
               className="absolute inset-0 pointer-events-none"
