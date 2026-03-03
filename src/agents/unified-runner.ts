@@ -101,6 +101,11 @@ export class UnifiedAgentRunner extends EventEmitter implements IAgentRunner {
     }
   }
 
+  /** 当前 Runner 使用的模型名称 */
+  get modelName(): string {
+    return this.options.model || '';
+  }
+
   /**
    * 停止当前执行
    */

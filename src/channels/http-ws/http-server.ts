@@ -511,13 +511,17 @@ export async function createHTTPServer(options: HTTPServerOptions) {
       // 如果是已存在的 session，尝试复用之前的 runner
       let agentRunner: IAgentRunner;
       const existingRunner = activeAgentRunners.get(session.id);
+      // 当前会话应使用的模型
+      const modelName = session.model || config.defaultModel || config.models[0]?.name || 'MiniMax-M2.5';
 
-      if (existingRunner) {
+      if (existingRunner && existingRunner.modelName === modelName) {
         console.log('[HTTPServer] Reusing existing UnifiedAgentRunner for session:', session.id);
         agentRunner = existingRunner;
       } else {
-        // 使用 session 指定的模型（前端选择），fallback 到配置默认值
-        const modelName = session.model || config.defaultModel || config.models[0]?.name || 'MiniMax-M2.5';
+        if (existingRunner) {
+          console.log('[HTTPServer] Model changed:', existingRunner.modelName, '->', modelName, ', creating new runner for session:', session.id);
+          activeAgentRunners.delete(session.id);
+        }
         // 获取当前工作目录
         const cwd = workDirManager.getCurrentWorkDir();
         // 从持久化 session 恢复 claudeSessionId（用于 Claude Agent SDK resume）
@@ -601,6 +605,13 @@ export async function createHTTPServer(options: HTTPServerOptions) {
       let fullContent = '';
       const attachments: any[] = [];
 
+      // ── 工具调用 & 思考过程收集（用于持久化历史） ───────────────────────────
+      // result 截断到 300 字符，避免大文件内容膨胀 sessions.json
+      const MAX_TOOL_RESULT_LEN = 300;
+      const MAX_THINKING_LEN    = 500;
+      const collectedToolStatus: import('../../types.js').PersistedToolStatus[] = [];
+      let   collectedThinking = '';
+
       // 记忆检索：在 streamRun 前搜索相关记忆，构建上下文提示词
       let contextualMessage = message;
       if (options.memoryManager) {
@@ -639,6 +650,7 @@ export async function createHTTPServer(options: HTTPServerOptions) {
 
         // 思考过程事件 - 流式输出思考内容
         if (chunk.type === 'thinking' && chunk.content) {
+          collectedThinking += chunk.content;
           console.log('[HTTPServer] Sending thinking event:', chunk.content.slice(0, 50));
           res.write(`event: thinking\ndata: ${JSON.stringify({ content: chunk.content })}\n\n`);
           (res as any).flush?.();
@@ -649,6 +661,14 @@ export async function createHTTPServer(options: HTTPServerOptions) {
           (res as any).flush?.();
         } else if (chunk.type === 'tool_use') {
           console.log('[HTTPServer] Tool start:', chunk.tool, chunk.args);
+          // 收集工具调用 start 条目
+          collectedToolStatus.push({
+            tool: chunk.tool ?? '',
+            toolId: chunk.toolId,
+            status: 'start',
+            args: chunk.args,
+            timestamp: Date.now(),
+          });
           res.write(`event: tool\ndata: ${JSON.stringify({
             tool: chunk.tool,
             toolId: chunk.toolId,
@@ -658,6 +678,23 @@ export async function createHTTPServer(options: HTTPServerOptions) {
           (res as any).flush?.();
         } else if (chunk.type === 'tool_result') {
           console.log('[HTTPServer] Tool end:', chunk.tool, 'Args:', chunk.args, 'Result type:', typeof chunk.result);
+          // 将 end 数据合并回对应的 start 条目（按 toolId 反向查找）
+          const startIdx = collectedToolStatus.slice().reverse().findIndex(
+            t => t.toolId === chunk.toolId && t.status === 'start'
+          );
+          if (startIdx >= 0) {
+            const realIdx = collectedToolStatus.length - 1 - startIdx;
+            const raw = chunk.result;
+            const truncated = typeof raw === 'string' && raw.length > MAX_TOOL_RESULT_LEN
+              ? raw.slice(0, MAX_TOOL_RESULT_LEN) + '…'
+              : raw;
+            collectedToolStatus[realIdx] = {
+              ...collectedToolStatus[realIdx],
+              status: 'end',
+              result: truncated,
+              isError: chunk.isError,
+            };
+          }
           res.write(`event: tool\ndata: ${JSON.stringify({
             tool: chunk.tool,
             toolId: chunk.toolId,
@@ -701,7 +738,10 @@ export async function createHTTPServer(options: HTTPServerOptions) {
             role: 'assistant' as const,
             content: fullContent,
             timestamp: Date.now(),
-            attachments: chunk.attachments
+            attachments: chunk.attachments,
+            // 持久化工具调用时间轴（result 已截断）和思考过程摘要
+            ...(collectedToolStatus.length > 0 && { toolStatus: collectedToolStatus }),
+            ...(collectedThinking && { thinking: collectedThinking.slice(0, MAX_THINKING_LEN) }),
           };
           session.messages.push(assistantMessage);
 

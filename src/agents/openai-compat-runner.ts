@@ -128,6 +128,11 @@ export class OpenAICompatRunner extends EventEmitter {
     console.log('[OpenAICompatRunner] Initialized with approvalMode:', approvalMode);
   }
 
+  /** 当前使用的模型名称 */
+  get modelName(): string {
+    return this.options.model;
+  }
+
   /**
    * 停止当前执行
    */

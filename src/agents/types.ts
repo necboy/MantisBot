@@ -76,6 +76,9 @@ export interface AgentRunnerOptions {
  * Agent Runner 统一接口
  */
 export interface IAgentRunner {
+  /** 当前使用的模型名称 */
+  readonly modelName: string;
+
   /**
    * 流式运行
    */

@@ -129,6 +129,13 @@ export class SessionManager {
    * @param ttlDays 不活跃超过多少天的会话会被归档（0 = 禁用）
    * @returns 已归档的会话数量
    */
+  /**
+   * 立即将内存数据写入磁盘（进程退出前调用，防止防抖 timer 尚未触发导致数据丢失）
+   */
+  flushSync(): void {
+    this.storage.flushSync();
+  }
+
   archiveInactiveSessions(ttlDays: number): number {
     if (ttlDays <= 0) return 0;
 

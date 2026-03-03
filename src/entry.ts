@@ -267,6 +267,7 @@ export async function main(): Promise<void> {
   // Setup shutdown handlers
   process.on('SIGINT', async () => {
     console.log('[MantisBot] Shutting down...');
+    sessionManager.flushSync();
     cronService.stop();
     if (tunnelManager) {
       await tunnelManager.stopAll();
@@ -281,6 +282,7 @@ export async function main(): Promise<void> {
 
   process.on('SIGTERM', async () => {
     console.log('[MantisBot] Shutting down...');
+    sessionManager.flushSync();
     cronService.stop();
     if (tunnelManager) {
       await tunnelManager.stopAll();

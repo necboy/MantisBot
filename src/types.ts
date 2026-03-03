@@ -10,6 +10,18 @@ export interface FileAttachment {
 }
 
 // Session types
+
+/** 工具调用状态（持久化时 result 截断到 MAX_TOOL_RESULT_LEN 字符） */
+export interface PersistedToolStatus {
+  tool: string;
+  toolId?: string;
+  status: 'start' | 'end';
+  args?: Record<string, unknown>;
+  result?: unknown;
+  isError?: boolean;
+  timestamp?: number;
+}
+
 export interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system' | 'tool';
@@ -18,6 +30,10 @@ export interface Message {
   toolCalls?: ToolCall[];
   toolCallId?: string;
   attachments?: FileAttachment[];  // 文件附件列表
+  /** 工具调用时间轴（result 已截断，仅用于历史展示） */
+  toolStatus?: PersistedToolStatus[];
+  /** 思考过程摘要（截断到前 500 字符） */
+  thinking?: string;
 }
 
 // 审批模式类型

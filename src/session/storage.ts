@@ -8,10 +8,15 @@ import type { Session } from '../types.js';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_DATA_DIR = join(__dirname, '../../data');
 
+/** 防抖延迟（ms）：同一轮对话多次写合并为一次 */
+const DEBOUNCE_MS = 300;
+
 export class SessionStorage {
   private sessions: Map<string, Session> = new Map();
   private dataDir: string;
   private sessionsFile: string;
+  private debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  private destroyed = false;
 
   constructor(workspace?: string) {
     this.dataDir = workspace || DEFAULT_DATA_DIR;
@@ -38,12 +43,43 @@ export class SessionStorage {
     }
   }
 
-  private save(): void {
+  /** 实际写盘操作（由防抖或 flushSync 调用） */
+  private flushToDisk(): void {
     try {
       const data = Array.from(this.sessions.values());
       writeFileSync(this.sessionsFile, JSON.stringify(data, null, 2));
     } catch (error) {
       console.error('[SessionStorage] Failed to save sessions:', error);
+    }
+  }
+
+  /** 安排一次防抖写盘，300ms 内的多次调用合并为一次 */
+  private scheduleSave(): void {
+    if (this.destroyed) return;
+    if (this.debounceTimer !== null) {
+      clearTimeout(this.debounceTimer);
+    }
+    this.debounceTimer = setTimeout(() => {
+      this.debounceTimer = null;
+      this.flushToDisk();
+    }, DEBOUNCE_MS);
+  }
+
+  /** 立即将内存数据写入磁盘，取消待执行的防抖计时器（进程退出时调用） */
+  flushSync(): void {
+    if (this.debounceTimer !== null) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
+    }
+    this.flushToDisk();
+  }
+
+  /** 取消待执行的防抖，释放资源 */
+  destroy(): void {
+    this.destroyed = true;
+    if (this.debounceTimer !== null) {
+      clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
     }
   }
 
@@ -53,12 +89,12 @@ export class SessionStorage {
 
   set(session: Session): void {
     this.sessions.set(session.id, session);
-    this.save();
+    this.scheduleSave();
   }
 
   delete(id: string): boolean {
     const result = this.sessions.delete(id);
-    if (result) this.save();
+    if (result) this.scheduleSave();
     return result;
   }
 
@@ -68,6 +104,6 @@ export class SessionStorage {
 
   clear(): void {
     this.sessions.clear();
-    this.save();
+    this.scheduleSave();
   }
 }

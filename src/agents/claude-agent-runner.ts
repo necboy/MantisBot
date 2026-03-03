@@ -268,6 +268,11 @@ export class ClaudeAgentRunner extends EventEmitter {
     return this.claudeSessionId;
   }
 
+  /** 当前使用的模型名称 */
+  get modelName(): string {
+    return this.options.model;
+  }
+
   /**
    * 停止当前执行
    */

@@ -142,14 +142,36 @@ function getToolDisplayName(toolName: string): string {
     'browser_wait': i18n.t('tool.browserWait'),
     'cron_manage': i18n.t('tool.cronManage'),
   };
-  return toolNames[toolName] || toolName;
+
+  // 精确匹配
+  if (toolNames[toolName]) return toolNames[toolName];
+
+  // MCP 工具：格式为 mcp__{server}__{action} 或 mcp_{server}__{action}
+  // 提取最后一段 action，用 _ 分词后首字母大写，再查翻译表
+  const mcpMatch = toolName.match(/^mcp__?[^_]+__(.+)$/);
+  if (mcpMatch) {
+    const action = mcpMatch[1]; // e.g. "read_skill"
+    if (toolNames[action]) return toolNames[action];
+    // 自动美化：snake_case → Title Case
+    return action.split('_').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+  }
+
+  // Claude SDK 内置工具（首字母大写形式）：Read, Write, Edit, Bash, Glob, Grep 等
+  const sdkName = toolName.toLowerCase();
+  if (toolNames[sdkName]) return toolNames[sdkName];
+
+  return toolName;
 }
 
 // 格式化工具参数，显示关键信息
 function formatToolArgs(toolName: string, args: Record<string, unknown> | undefined): string {
   if (!args) return '';
 
-  switch (toolName) {
+  // MCP 工具：提取 action 部分后统一处理
+  const mcpMatch = toolName.match(/^mcp__?[^_]+__(.+)$/);
+  const name = mcpMatch ? mcpMatch[1] : toolName;
+
+  switch (name) {
     case 'read':
     case 'Read':
       return args.file_path ? i18n.t('toolArgs.reading', { filename: String(args.file_path).split('/').pop() }) : '';
@@ -174,12 +196,15 @@ function formatToolArgs(toolName: string, args: Record<string, unknown> | undefi
       return args.url ? i18n.t('toolArgs.visiting', { url: args.url }) : '';
     case 'memory_search':
       return args.query ? i18n.t('toolArgs.searching', { query: args.query }) : '';
+    case 'read_skill':
+      return args.skill_name ? String(args.skill_name) : '';
     default:
       // 默认：尝试显示常见的参数字段
       return args.command ? String(args.command) :
              args.pattern ? String(args.pattern) :
              args.file_path ? (String(args.file_path).split('/').pop() || String(args.file_path)) :
-             args.query ? String(args.query) : '';
+             args.query ? String(args.query) :
+             args.skill_name ? String(args.skill_name) : '';
   }
 }
 
@@ -1007,8 +1032,11 @@ function App() {
   // 鉴权确认后才加载配置和会话列表，避免在未登录时发出 401 请求引发循环
   useEffect(() => {
     if (!isAuthenticated) return;
-    fetchConfig();
-    fetchSessions();
+    // fetchConfig 先完成后再 fetchSessions，确保 selectSession 里的 setSelectedModel
+    // 是最后执行的，不会被 fetchConfig 的 defaultModel 覆盖
+    fetchConfig().then(() => {
+      fetchSessions();
+    });
     fetchNotifications();
     fetchAgentTeams();
   }, [isAuthenticated]);
@@ -1135,6 +1163,10 @@ function App() {
       } else {
         // 如果会话没有设置，使用默认值
         setApprovalMode('dangerous');
+      }
+      // 切换会话时，同步模型选择器为该会话实际使用的模型
+      if (data.model) {
+        setSelectedModel(data.model);
       }
     } catch (e) {
       console.error('Failed to fetch session:', e);

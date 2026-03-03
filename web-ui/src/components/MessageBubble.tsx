@@ -90,8 +90,11 @@ function getToolTheme(toolName: string, isError: boolean): ToolTheme {
       runningText: 'text-red-500',
     };
   }
-  const name = toolName.toLowerCase();
-  if (name === 'read' || name === 'glob' || name === 'grep') {
+  // 提取 action 部分：MCP 工具格式 mcp__{server}__{action}，否则直接用工具名
+  const mcpMatch = toolName.match(/^mcp__?[^_]+__(.+)$/);
+  const name = (mcpMatch ? mcpMatch[1] : toolName).toLowerCase();
+
+  if (name === 'read' || name === 'glob' || name === 'grep' || name === 'read_skill' || name === 'document') {
     return {
       icon: '📂',
       dotColor: 'bg-sky-500',
