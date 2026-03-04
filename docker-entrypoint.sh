@@ -26,9 +26,16 @@ fi
 # 激活虚拟环境（使用 . 代替 source，兼容 sh）
 . /app/python-venv/bin/activate
 
+# crawl4ai 使用独立的浏览器路径，与 Node.js playwright (/app/.playwright) 隔离
+export PLAYWRIGHT_BROWSERS_PATH=/app/.playwright-python
+
 # 检查基础包是否已安装，如果没有则安装
 if ! python3 -c "import requests" 2>/dev/null; then
   echo "[Entrypoint] Installing Python packages for skills..."
+
+  # crawl4ai（网页爬取）
+  pip install --no-cache-dir \
+    crawl4ai
 
   # 核心包
   pip install --no-cache-dir \

@@ -565,9 +565,17 @@ export class OpenAICompatRunner extends EventEmitter {
 
     // 动态读取当前工作目录，注入系统提示词
     const currentCwd = workDirManager.getCurrentWorkDir();
+    const dirContext = workDirManager.getWorkDirContext();
     const basePrompt = this.options.systemPrompt || '';
     const rememberInstruction = `\n\n## 记忆工具\n你有一个 \`remember\` 工具，仅在学到对未来对话有价值的信息时调用：\n- 用户偏好（编码风格、语言偏好、沟通方式）\n- 项目关键事实（技术栈、架构决策、环境信息）\n- 重要决策（用户做出的选择，如"暂不引入 Redis"）\n- 个人上下文（姓名、时区、角色）\n\n不要调用 remember 记录：普通问答、解释说明、调试步骤、或仅与当前任务相关的临时信息。`;
-    const systemContent = `${basePrompt}\n\n## 当前工作目录\n${currentCwd}${rememberInstruction}`.trimStart();
+
+    // 构建系统提示词：工作目录 + 目录结构上下文
+    let systemContent = `${basePrompt}\n\n## 当前工作目录\n${currentCwd}`;
+    if (dirContext) {
+      systemContent += `\n\n${dirContext}`;
+    }
+    systemContent += rememberInstruction;
+    systemContent = systemContent.trimStart();
 
     messages.push({
       role: 'system',

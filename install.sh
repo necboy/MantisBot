@@ -448,8 +448,35 @@ install_pandoc() {
 }
 
 # ────────────────────────────────────────────────────────────
-# STEP 6: 启动
+# STEP 5e: 安装 crawl4ai（网页爬取工具）
 # ────────────────────────────────────────────────────────────
+install_crawl4ai() {
+  step "安装 Crawl4AI / Installing Crawl4AI (Web Crawler)"
+
+  if python3 -c "import crawl4ai" 2>/dev/null; then
+    ok "crawl4ai 已安装：$(python3 -c 'import crawl4ai; print(crawl4ai.__version__)' 2>/dev/null || echo 'unknown version')"
+    return
+  fi
+
+  info "正在安装 crawl4ai（基于 Playwright 的网页爬取库）..."
+  echo ""
+
+  if python3 -m pip install crawl4ai; then
+    echo ""
+    ok "crawl4ai 安装完成"
+    info "正在运行 crawl4ai-setup 下载浏览器驱动（首次安装需要数分钟）..."
+    if crawl4ai-setup 2>/dev/null || python3 -m crawl4ai.doctor 2>/dev/null; then
+      ok "crawl4ai 浏览器驱动配置完成"
+    else
+      warn "crawl4ai-setup 运行失败，可手动执行：crawl4ai-setup"
+    fi
+  else
+    warn "crawl4ai 安装失败，网页爬取功能可能无法使用"
+    info "可手动重试：pip install crawl4ai && crawl4ai-setup"
+  fi
+}
+
+
 start_project() {
   step "启动 MantisBot / Launch"
 
@@ -536,6 +563,7 @@ main() {
   install_playwright_browser
   install_poppler
   install_pandoc
+  install_crawl4ai
   start_project
 
   echo ""

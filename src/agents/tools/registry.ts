@@ -10,6 +10,7 @@ import { browserTools } from './browser.js';
 import { memorySearchTool } from './memory-search.js';
 import { rememberTool } from './remember.js';
 import { firecrawlTool } from './firecrawl.js';
+import { crawl4aiTool } from './crawl4ai.js';
 
 const builtInTools: Record<string, Tool> = {
   logger: loggerTool,
@@ -21,19 +22,27 @@ const builtInTools: Record<string, Tool> = {
   send_file: sendFileTool,
   memory_search: memorySearchTool,
   remember: rememberTool,
-  firecrawl: firecrawlTool
+  firecrawl: firecrawlTool,
+  crawl4ai: crawl4aiTool
 };
 
 // Browser 工具（数组形式）
 const browserToolsArray: Tool[] = browserTools;
 
 // 核心工具（总是可用）
-const CORE_TOOLS = ['read_skill', 'exec', 'read', 'write', 'edit', 'send_file', 'memory_search', 'remember', 'firecrawl'];
+const CORE_TOOLS = ['read_skill', 'exec', 'read', 'write', 'edit', 'send_file', 'memory_search', 'remember', 'crawl4ai'];
+
+export interface ToolRegistryOptions {
+  enabledPlugins?: string[];
+  firecrawlApiKey?: string;
+}
 
 export class ToolRegistry {
   private tools: Map<string, Tool> = new Map();
 
-  constructor(enabledPlugins: string[] = []) {
+  constructor(options: ToolRegistryOptions = {}) {
+    const { enabledPlugins = [], firecrawlApiKey } = options;
+
     // Load core tools (always available)
     for (const name of CORE_TOOLS) {
       if (builtInTools[name]) {
@@ -41,9 +50,16 @@ export class ToolRegistry {
       }
     }
 
+    // Load firecrawl only if API key is configured
+    if (firecrawlApiKey) {
+      if (builtInTools['firecrawl']) {
+        this.tools.set('firecrawl', builtInTools['firecrawl']);
+      }
+    }
+
     // Load built-in tools from config
     for (const name of enabledPlugins) {
-      if (builtInTools[name]) {
+      if (builtInTools[name] && name !== 'firecrawl') { // firecrawl 单独处理
         this.tools.set(name, builtInTools[name]);
       }
     }

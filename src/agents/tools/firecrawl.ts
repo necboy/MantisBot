@@ -1,12 +1,16 @@
 import type { Tool } from '../../types.js';
+import { broadcastToClients } from '../../channels/http-ws/ws-server.js';
 
 /**
  * Firecrawl 工具 - 搜索和抓取网页内容
  * 替代 SDK 内置的 WebFetch/WebSearch
+ * 搜索结果 URL 会在前端浏览器面板展示
+ *
+ * ⚡ 推荐：优先使用此工具而非 Bash+Python，内置搜索能力，无需自行拼接搜索 API
  */
 export const firecrawlTool: Tool = {
   name: 'firecrawl',
-  description: 'Search and scrape web content using Firecrawl. Use for: web search, extracting content from URLs, crawling websites. Args: action (search|scrape|map), query (for search), url (for scrape/map), options',
+  description: '【推荐】使用 Firecrawl 搜索和抓取网页。支持 web search、URL 内容提取、网站结构扫描。搜索结果的 URL 会在前端浏览器面板以列表形式展示。相比 Bash+Python 更便捷：内置搜索能力，无需拼接搜索 API，自动处理 JSON 解析和错误。Args: action (search|scrape|map), query (搜索词), url (抓取URL)',
   parameters: {
     type: 'object',
     properties: {
@@ -122,14 +126,44 @@ export const firecrawlTool: Tool = {
             const { readFile } = await import('fs/promises');
             const content = await readFile(outputFile + '.md', 'utf-8');
             result = { type: 'markdown', content };
+            resolve(result);
+          } else if (action === 'search') {
+            // 读取搜索结果 JSON
+            const { readFile } = await import('fs/promises');
+            const jsonContent = await readFile(outputFile + '.json', 'utf-8');
+            const searchResult = JSON.parse(jsonContent);
+
+            // 提取 URL 列表并广播到前端
+            // Firecrawl search 返回格式: { data: [{ url, title, description, ... }] } 或直接是数组
+            const items = Array.isArray(searchResult) ? searchResult : (searchResult.data || []);
+            const urls = items.map((item: any) => ({
+              title: item.title || item.markdown?.slice(0, 100) || item.url,
+              url: item.url
+            })).filter((item: any) => item.url);
+
+            if (urls.length > 0) {
+              console.log(`[Firecrawl] Broadcasting ${urls.length} URLs to frontend`);
+              broadcastToClients('search-urls', {
+                query: params.query,
+                urls: urls,
+                timestamp: Date.now()
+              });
+            }
+
+            // 返回简洁的摘要给 agent，不返回完整结果
+            resolve({
+              success: true,
+              query: params.query,
+              url_count: urls.length,
+              message: `搜索完成，找到 ${urls.length} 个结果，已在前端浏览器面板展示`
+            });
           } else {
-            // 读取 JSON 结果
+            // map action - 读取 JSON 结果
             const { readFile } = await import('fs/promises');
             const jsonContent = await readFile(outputFile + '.json', 'utf-8');
             result = JSON.parse(jsonContent);
+            resolve(result);
           }
-
-          resolve(result);
         } catch (err) {
           // 如果读取失败，返回原始输出
           resolve({ stdout, stderr, code });

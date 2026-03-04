@@ -65,6 +65,13 @@ RUN npx playwright install chromium
 # 安装 Firecrawl CLI
 RUN npm install -g firecrawl-cli
 
+# 安装 crawl4ai 及其 Playwright 浏览器驱动
+# 使用系统 pip（不在 venv 中），确保 crawl4ai 命令全局可用
+# 注意：crawl4ai 内部的 Python playwright 与 Node.js playwright 版本不同，不能共用浏览器文件
+# 用独立路径 /app/.playwright-python 隔离，避免与 /app/.playwright（Node.js）冲突
+RUN pip3 install --no-cache-dir --break-system-packages crawl4ai && \
+    PLAYWRIGHT_BROWSERS_PATH=/app/.playwright-python crawl4ai-setup
+
 # 备份内置 skills，供首次启动时初始化持久化卷
 RUN cp -r /app/skills /app/skills-default
 

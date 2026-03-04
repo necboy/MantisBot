@@ -115,6 +115,7 @@ const MCP_ONLY_TOOLS = new Set([
   'logger',
   'cron_manage',  // 定时任务管理
   'firecrawl',    // Firecrawl 网页搜索和抓取（与 WebFetch 互斥，取决于 FIRECRAWL_API_KEY）
+  'crawl4ai',    // Crawl4AI 网页爬取（基于 Playwright，高质量 Markdown 输出）
   // 浏览器工具
   'browser_launch',
   'browser_close',
@@ -596,6 +597,12 @@ export class ClaudeAgentRunner extends EventEmitter {
 
     // 将当前工作目录注入系统提示词，确保 Claude 始终感知到正确路径
     systemPrompt = `${systemPrompt}\n\n## 当前工作目录\n${currentCwd}`;
+
+    // 注入目录结构上下文（办公场景优化）
+    const dirContext = workDirManager.getWorkDirContext();
+    if (dirContext) {
+      systemPrompt = `${systemPrompt}\n\n${dirContext}`;
+    }
 
     // 注入记忆工具使用指引
     systemPrompt = `${systemPrompt}\n\n## 记忆工具\n你有一个 \`remember\` 工具，仅在学到对未来对话有价值的信息时调用：\n- 用户偏好（编码风格、语言偏好、沟通方式）\n- 项目关键事实（技术栈、架构决策、环境信息）\n- 重要决策（用户做出的选择，如"暂不引入 Redis"）\n- 个人上下文（姓名、时区、角色）\n\n不要调用 remember 记录：普通问答、解释说明、调试步骤、或仅与当前任务相关的临时信息。`;
