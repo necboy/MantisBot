@@ -124,18 +124,46 @@ export const firecrawlTool: Tool = {
           if (action === 'scrape') {
             // 读取抓取的 markdown 文件
             const { readFile } = await import('fs/promises');
-            const content = await readFile(outputFile + '.md', 'utf-8');
+            const targetFile = outputFile + '.md';
+            console.log(`[Firecrawl] Reading scrape output: ${targetFile}`);
+            const content = await readFile(targetFile, 'utf-8');
             result = { type: 'markdown', content };
             resolve(result);
           } else if (action === 'search') {
             // 读取搜索结果 JSON
-            const { readFile } = await import('fs/promises');
-            const jsonContent = await readFile(outputFile + '.json', 'utf-8');
+            const { readFile, access } = await import('fs/promises');
+            const targetFile = outputFile + '.json';
+            console.log(`[Firecrawl] Reading search output: ${targetFile}`);
+
+            // 检查文件是否存在
+            try {
+              await access(targetFile);
+            } catch {
+              console.error(`[Firecrawl] Output file not found: ${targetFile}`);
+              resolve({
+                success: false,
+                error: `Output file not found: ${targetFile}`,
+                cwd,
+                stdout,
+                stderr
+              });
+              return;
+            }
+
+            const jsonContent = await readFile(targetFile, 'utf-8');
             const searchResult = JSON.parse(jsonContent);
 
             // 提取 URL 列表并广播到前端
-            // Firecrawl search 返回格式: { data: [{ url, title, description, ... }] } 或直接是数组
-            const items = Array.isArray(searchResult) ? searchResult : (searchResult.data || []);
+            // Firecrawl search 返回格式: { success: true, data: { web: [...] } }
+            // 也兼容旧格式: { data: [...] } 或直接是数组
+            let items: any[] = [];
+            if (Array.isArray(searchResult)) {
+              items = searchResult;
+            } else if (searchResult.data?.web && Array.isArray(searchResult.data.web)) {
+              items = searchResult.data.web;
+            } else if (Array.isArray(searchResult.data)) {
+              items = searchResult.data;
+            }
             const urls = items.map((item: any) => ({
               title: item.title || item.markdown?.slice(0, 100) || item.url,
               url: item.url
@@ -150,12 +178,16 @@ export const firecrawlTool: Tool = {
               });
             }
 
-            // 返回简洁的摘要给 agent，不返回完整结果
+            // 返回搜索结果给 agent（包含标题、URL、摘要）
             resolve({
               success: true,
               query: params.query,
-              url_count: urls.length,
-              message: `搜索完成，找到 ${urls.length} 个结果，已在前端浏览器面板展示`
+              results: items.map((item: any) => ({
+                title: item.title || '',
+                url: item.url || '',
+                description: item.description || ''
+              })),
+              url_count: urls.length
             });
           } else {
             // map action - 读取 JSON 结果
@@ -165,8 +197,16 @@ export const firecrawlTool: Tool = {
             resolve(result);
           }
         } catch (err) {
-          // 如果读取失败，返回原始输出
-          resolve({ stdout, stderr, code });
+          // 如果读取失败，返回详细错误信息
+          console.error(`[Firecrawl] Failed to read output file:`, err);
+          resolve({
+            success: false,
+            error: err instanceof Error ? err.message : String(err),
+            outputFile: outputFile + (action === 'scrape' ? '.md' : '.json'),
+            stdout,
+            stderr,
+            code
+          });
         }
       });
 

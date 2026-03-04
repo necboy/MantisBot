@@ -54,18 +54,20 @@ export const ModelProtocolSchema = z.enum(['openai', 'anthropic']);
 
 // 模型提供商：决定默认 API 端点
 export const ModelProviderSchema = z.enum([
-  'openai',      // OpenAI 官方
-  'anthropic',   // Anthropic 官方 (Claude)
-  'deepseek',    // DeepSeek
-  'alibaba',     // 阿里百炼 (通义千问)
-  'moonshot',    // Moonshot AI (Kimi)
-  'zhipu',       // 智谱 AI (GLM)
-  'minimax',     // MiniMax
-  'xai',         // xAI (Grok)
-  'google',      // Google AI (Gemini)
-  'cohere',      // Cohere
-  'ollama',      // Ollama 本地
-  'custom',      // 自定义端点
+  'openai',        // OpenAI 官方
+  'anthropic',     // Anthropic 官方 (Claude)
+  'deepseek',      // DeepSeek
+  'alibaba',       // 阿里百炼 (通义千问)
+  'alibaba-coding',// 阿里百炼 Coding Plan
+  'moonshot',      // Moonshot AI (Kimi)
+  'zhipu',         // 智谱 AI (GLM)
+  'zhipu-coding',  // 智谱 AI Coding Plan
+  'minimax',       // MiniMax
+  'xai',           // xAI (Grok)
+  'google',        // Google AI (Gemini)
+  'cohere',        // Cohere
+  'ollama',        // Ollama 本地
+  'custom',        // 自定义端点
 ]);
 
 // 提供商默认配置：支持 OpenAI 和 Anthropic 两种协议的端点
@@ -94,6 +96,11 @@ export const PROVIDER_DEFAULTS: Record<string, {
     anthropic: '', // 阿里百炼不提供 Anthropic 协议
     defaultProtocol: 'openai',
   },
+  'alibaba-coding': {
+    openai: 'https://coding.dashscope.aliyuncs.com/v1',
+    anthropic: '', // 阿里百炼 Coding Plan 不提供 Anthropic 协议
+    defaultProtocol: 'openai',
+  },
   moonshot: {
     openai: 'https://api.moonshot.cn/v1',
     anthropic: '', // Kimi 不提供 Anthropic 协议
@@ -103,6 +110,11 @@ export const PROVIDER_DEFAULTS: Record<string, {
     openai: 'https://open.bigmodel.cn/api/paas/v4',
     anthropic: 'https://open.bigmodel.cn/api/coding/paas/v4',
     defaultProtocol: 'openai',
+  },
+  'zhipu-coding': {
+    openai: '', // zhipu-coding 只支持 Anthropic 协议
+    anthropic: 'https://open.bigmodel.cn/api/anthropic',
+    defaultProtocol: 'anthropic',
   },
   minimax: {
     openai: 'https://api.minimax.chat/v1',
