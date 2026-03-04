@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { getConfig } from '../../config/loader.js';
 import { workDirManager } from '../../workdir/manager.js';
+import { isSensitivePath } from '../../security/path-guard.js';
 
 function isPathSafe(filePath: string): boolean {
   const config = getConfig();
@@ -48,6 +49,11 @@ export const writeTool: Tool = {
 
     if (content === undefined || content === null) {
       return { success: false, error: '需要提供文件内容' };
+    }
+
+    // 检查敏感路径
+    if (isSensitivePath(file_path)) {
+      return { success: false, error: 'Access to this path is restricted' };
     }
 
     // 安全检查

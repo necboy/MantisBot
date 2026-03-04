@@ -5,6 +5,7 @@ import os from 'os';
 import { workDirManager } from '../../workdir/manager.js';
 import { getStorageManager, hasStorageManager } from '../../storage/manager.js';
 import { StorageError } from '../../storage/storage.interface.js';
+import { isSensitivePath, shouldHideItem } from '../../security/path-guard.js';
 
 const router = express.Router();
 
@@ -29,6 +30,16 @@ function resolveUserPath(basePath: string, userPath: string): string {
   }
   // 相对路径，基于 basePath 解析
   return path.resolve(basePath, userPath);
+}
+
+// 检查路径是否敏感并返回标准化结果
+// 返回 null 表示路径安全，返回 string 表示错误消息
+function checkSensitivePathAccess(targetPath: string, baseDir: string): string | null {
+  const resolvedPath = path.isAbsolute(targetPath) ? targetPath : resolveUserPath(baseDir, targetPath);
+  if (isSensitivePath(resolvedPath)) {
+    return 'Access to this path is restricted';
+  }
+  return null;
 }
 
 // 获取用户主目录
@@ -58,6 +69,12 @@ router.get('/api/explore/list', async (req, res) => {
     return res.status(403).json({ error: 'Path traversal detected' });
   }
 
+  // 检查是否尝试访问敏感目录
+  const sensitiveError = checkSensitivePathAccess(targetPath, baseDir);
+  if (sensitiveError) {
+    return res.status(403).json({ error: sensitiveError });
+  }
+
   try {
     // 对于绝对路径（如 /Users），直接使用本地文件系统，不通过 Storage Manager
     // 因为 Storage Manager 可能限制在特定目录内
@@ -68,8 +85,10 @@ router.get('/api/explore/list', async (req, res) => {
       const storage = storageManager.getCurrentStorage();
 
       const items = await storage.listDirectory(targetPath);
+      const currentFullPath = path.join(baseDir, targetPath);
       const result = items
         .filter(item => !item.name.startsWith('.')) // 过滤隐藏文件
+        .filter(item => !shouldHideItem(currentFullPath, item.name)) // 过滤敏感目录
         .map(item => ({
           name: item.name,
           type: item.type,
@@ -92,6 +111,7 @@ router.get('/api/explore/list', async (req, res) => {
     const items = fs.readdirSync(fullPath, { withFileTypes: true });
     const result = items
       .filter(item => !item.name.startsWith('.')) // 过滤隐藏文件
+      .filter(item => !shouldHideItem(fullPath, item.name)) // 过滤敏感目录
       .map(item => {
       const itemPath = path.join(fullPath, item.name);
       let size: number | undefined;
@@ -142,6 +162,12 @@ router.get('/api/explore/read', async (req, res) => {
 
   if (!isPathSafe(baseDir, targetPath)) {
     return res.status(403).json({ error: 'Path traversal detected' });
+  }
+
+  // 检查敏感路径
+  const sensitiveError = checkSensitivePathAccess(targetPath, baseDir);
+  if (sensitiveError) {
+    return res.status(403).json({ error: sensitiveError });
   }
 
   try {
@@ -225,6 +251,12 @@ router.get('/api/explore/binary', async (req, res) => {
 
   if (!isPathSafe(baseDir, targetPath)) {
     return res.status(403).json({ error: 'Path traversal detected' });
+  }
+
+  // 检查敏感路径（data/uploads/ 已在白名单中，允许访问）
+  const sensitiveError = checkSensitivePathAccess(targetPath, baseDir);
+  if (sensitiveError) {
+    return res.status(403).json({ error: sensitiveError });
   }
 
   // 对于 data/uploads/ 路径，直接使用项目目录下的 data 文件夹
@@ -390,6 +422,12 @@ router.get('/api/explore/stat', async (req, res) => {
     return res.status(403).json({ error: 'Path traversal detected' });
   }
 
+  // 检查敏感路径
+  const sensitiveError = checkSensitivePathAccess(targetPath, baseDir);
+  if (sensitiveError) {
+    return res.status(403).json({ error: sensitiveError });
+  }
+
   try {
     // 对于绝对路径，直接使用本地文件系统
     const useStorageManager = hasStorageManager() && !path.isAbsolute(targetPath);
@@ -456,6 +494,12 @@ router.post('/api/explore/upload', async (req, res) => {
 
   if (!isPathSafe(baseDir, targetDir)) {
     return res.status(403).json({ error: 'Path traversal detected' });
+  }
+
+  // 检查敏感路径
+  const sensitiveError = checkSensitivePathAccess(targetDir, baseDir);
+  if (sensitiveError) {
+    return res.status(403).json({ error: sensitiveError });
   }
 
   try {
@@ -540,6 +584,12 @@ router.post('/api/explore/mkdir', async (req, res) => {
     return res.status(403).json({ error: 'Path traversal detected' });
   }
 
+  // 检查敏感路径
+  const sensitiveError = checkSensitivePathAccess(targetDir, baseDir);
+  if (sensitiveError) {
+    return res.status(403).json({ error: sensitiveError });
+  }
+
   try {
     // 如果有存储管理器，使用存储管理器
     if (hasStorageManager()) {
@@ -613,6 +663,12 @@ router.post('/api/explore/delete', async (req, res) => {
     return res.status(403).json({ error: 'Path traversal detected' });
   }
 
+  // 检查敏感路径
+  const sensitiveError = checkSensitivePathAccess(targetPath, baseDir);
+  if (sensitiveError) {
+    return res.status(403).json({ error: sensitiveError });
+  }
+
   try {
     // 如果有存储管理器，使用存储管理器
     if (hasStorageManager()) {
@@ -681,6 +737,12 @@ router.post('/api/explore/copy', (req, res) => {
     return res.status(403).json({ error: 'Path traversal detected' });
   }
 
+  // 检查敏感路径
+  const sensitiveError = checkSensitivePathAccess(source, baseDir);
+  if (sensitiveError) {
+    return res.status(403).json({ error: sensitiveError });
+  }
+
   try {
     const fullPath = resolveUserPath(baseDir, source);
 
@@ -714,6 +776,16 @@ router.post('/api/explore/paste', async (req, res) => {
 
   if (!isPathSafe(baseDir, source) || !isPathSafe(baseDir, targetDir)) {
     return res.status(403).json({ error: 'Path traversal detected' });
+  }
+
+  // 检查敏感路径
+  const sourceError = checkSensitivePathAccess(source, baseDir);
+  if (sourceError) {
+    return res.status(403).json({ error: sourceError });
+  }
+  const targetError = checkSensitivePathAccess(targetDir, baseDir);
+  if (targetError) {
+    return res.status(403).json({ error: targetError });
   }
 
   try {
@@ -842,6 +914,12 @@ router.post('/api/explore/rename', async (req, res) => {
 
   if (!isPathSafe(baseDir, targetPath)) {
     return res.status(403).json({ error: 'Path traversal detected' });
+  }
+
+  // 检查敏感路径
+  const sensitiveError = checkSensitivePathAccess(targetPath, baseDir);
+  if (sensitiveError) {
+    return res.status(403).json({ error: sensitiveError });
   }
 
   // 检查新名称是否包含非法字符

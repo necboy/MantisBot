@@ -1,6 +1,7 @@
 import { Tool } from '../../types.js';
 import { getStorageManager, hasStorageManager } from '../../storage/manager.js';
 import { StorageError } from '../../storage/storage.interface.js';
+import { isSensitivePath } from '../../security/path-guard.js';
 
 // NAS文件列表工具
 export const nasListTool: Tool = {
@@ -20,6 +21,14 @@ export const nasListTool: Tool = {
   execute: async (params: Record<string, unknown>) => {
     const path = (params.path as string) || '/';
     try {
+      // 检查敏感路径
+      if (isSensitivePath(path)) {
+        return {
+          success: false,
+          error: 'Access to this path is restricted'
+        };
+      }
+
       if (!hasStorageManager()) {
         return {
           success: false,
@@ -89,6 +98,14 @@ export const nasReadTool: Tool = {
   execute: async (params: Record<string, unknown>) => {
     const path = params.path as string;
     try {
+      // 检查敏感路径
+      if (isSensitivePath(path)) {
+        return {
+          success: false,
+          error: 'Access to this path is restricted'
+        };
+      }
+
       if (!hasStorageManager()) {
         return {
           success: false,
@@ -183,6 +200,14 @@ export const nasWriteTool: Tool = {
     const path = params.path as string;
     const content = params.content as string;
     try {
+      // 检查敏感路径
+      if (isSensitivePath(path)) {
+        return {
+          success: false,
+          error: 'Access to this path is restricted'
+        };
+      }
+
       if (!hasStorageManager()) {
         return {
           success: false,
@@ -259,6 +284,14 @@ export const nasDeleteTool: Tool = {
   execute: async (params: Record<string, unknown>) => {
     const path = params.path as string;
     try {
+      // 检查敏感路径
+      if (isSensitivePath(path)) {
+        return {
+          success: false,
+          error: 'Access to this path is restricted'
+        };
+      }
+
       if (!hasStorageManager()) {
         return {
           success: false,
@@ -336,6 +369,14 @@ export const nasMkdirTool: Tool = {
   execute: async (params: Record<string, unknown>) => {
     const path = params.path as string;
     try {
+      // 检查敏感路径
+      if (isSensitivePath(path)) {
+        return {
+          success: false,
+          error: 'Access to this path is restricted'
+        };
+      }
+
       if (!hasStorageManager()) {
         return {
           success: false,

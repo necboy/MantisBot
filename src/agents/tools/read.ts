@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { getConfig } from '../../config/loader.js';
 import { workDirManager } from '../../workdir/manager.js';
+import { isSensitivePath } from '../../security/path-guard.js';
 
 // 最大文件大小限制
 const MAX_FILE_SIZE = 100 * 1024; // 100KB
@@ -51,6 +52,11 @@ export const readTool: Tool = {
 
     if (!file_path || typeof file_path !== 'string') {
       return { success: false, error: '需要提供文件路径' };
+    }
+
+    // 检查敏感路径
+    if (isSensitivePath(file_path)) {
+      return { success: false, error: 'Access to this path is restricted' };
     }
 
     // 安全检查

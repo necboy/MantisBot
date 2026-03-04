@@ -3,6 +3,7 @@ import fs from 'fs';
 import path from 'path';
 import { getConfig } from '../../config/loader.js';
 import { workDirManager } from '../../workdir/manager.js';
+import { isSensitivePath } from '../../security/path-guard.js';
 
 function isPathSafe(filePath: string): boolean {
   const config = getConfig();
@@ -61,6 +62,11 @@ export const editTool: Tool = {
 
     if (typeof new_string !== 'string') {
       return { success: false, error: '需要提供替换后的文本' };
+    }
+
+    // 检查敏感路径
+    if (isSensitivePath(file_path)) {
+      return { success: false, error: 'Access to this path is restricted' };
     }
 
     // 安全检查
