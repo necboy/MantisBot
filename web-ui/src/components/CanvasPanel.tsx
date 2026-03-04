@@ -3,7 +3,9 @@ import { useTranslation } from 'react-i18next';
 import { FileItem, PreviewPane } from './PreviewPane';
 import { FileExplorer } from './FileExplorer';
 import { FileManager } from './FileManager';
-import { Monitor, Globe, FileText, HardDrive, Image, ExternalLink } from 'lucide-react';
+import { Monitor, Globe, FileText, HardDrive, Image, ExternalLink, Mail, List } from 'lucide-react';
+import { EmailPanel } from './EmailPanel';
+import type { EmailReference } from '../types/context-reference';
 
 export type { FileItem };
 
@@ -16,6 +18,14 @@ export interface BrowserSnapshot {
   title?: string;
 }
 
+// 搜索 URL 列表
+export interface SearchUrlList {
+  id: string;
+  query: string;
+  urls: Array<{ title: string; url: string }>;
+  timestamp: number;
+}
+
 // 终端输出
 export interface TerminalOutput {
   id: string;
@@ -25,8 +35,8 @@ export interface TerminalOutput {
   timestamp: number;
 }
 
-type CanvasMode = 'preview' | 'files' | 'browser' | 'terminal';
-type BrowserViewMode = 'screenshots' | 'live';
+type CanvasMode = 'preview' | 'files' | 'browser' | 'terminal' | 'email';
+type BrowserViewMode = 'screenshots' | 'live' | 'search-urls';
 
 interface CanvasPanelProps {
   isOpen: boolean;
@@ -35,6 +45,7 @@ interface CanvasPanelProps {
   onFileSelect: (file: FileItem) => void;
   browserSnapshots?: BrowserSnapshot[];
   terminalOutputs?: TerminalOutput[];
+  searchUrlLists?: SearchUrlList[];
   forceMode?: CanvasMode;
   onClearForceMode?: () => void;
   homeDirectory?: string;
@@ -42,6 +53,10 @@ interface CanvasPanelProps {
   serverUrl?: string;
   // 新增：添加文件引用回调
   onAddReference?: (item: { path: string; name: string; type: 'file' | 'directory'; size?: number; ext?: string }) => void;
+  // 新增：添加邮件引用回调
+  onAddEmailReference?: (ref: EmailReference) => void;
+  // 新增：程序化发送消息回调
+  onSendProgrammatic?: (message: string) => void;
   // 新增：工作目录变更回调
   onWorkDirChange?: (path: string) => void;
   // 新增：权限错误回调
@@ -59,12 +74,15 @@ export function CanvasPanel({
   onFileSelect,
   browserSnapshots = [],
   terminalOutputs = [],
+  searchUrlLists = [],
   forceMode,
   onClearForceMode,
   homeDirectory = '/',
   officePreviewServer,
   serverUrl,
   onAddReference,
+  onAddEmailReference,
+  onSendProgrammatic,
   onWorkDirChange,
   onPermissionError,
   openFiles = [],
@@ -327,6 +345,18 @@ export function CanvasPanel({
               <HardDrive className="w-3.5 h-3.5" />
               <span className="hidden md:inline">{t('canvas.nas')}</span>
             </button>
+            <button
+              onClick={() => handleModeChange('email')}
+              className={`flex items-center gap-1 px-3 py-1 text-sm rounded-md transition-colors ${
+                mode === 'email'
+                  ? 'bg-white dark:bg-gray-700 text-primary-600 dark:text-primary-400 shadow-sm'
+                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+              }`}
+              title={t('canvas.email')}
+            >
+              <Mail className="w-3.5 h-3.5" />
+              <span className="hidden md:inline">{t('canvas.email')}</span>
+            </button>
           </div>
         </div>
 
@@ -420,6 +450,22 @@ export function CanvasPanel({
                   <span>{t('canvas.screenshot')}</span>
                 </button>
                 <button
+                  onClick={() => setBrowserViewMode('search-urls')}
+                  className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors relative ${
+                    browserViewMode === 'search-urls'
+                      ? 'bg-primary-500 text-white shadow-sm'
+                      : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
+                  }`}
+                >
+                  <List className="w-3.5 h-3.5" />
+                  <span>{t('canvas.searchResults')}</span>
+                  {searchUrlLists.length > 0 && (
+                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-primary-500 text-white text-xs rounded-full flex items-center justify-center">
+                      {searchUrlLists.length}
+                    </span>
+                  )}
+                </button>
+                <button
                   onClick={() => setBrowserViewMode('live')}
                   className={`flex items-center gap-1.5 px-3 py-1.5 text-sm rounded-md transition-colors ${
                     browserViewMode === 'live'
@@ -500,6 +546,88 @@ export function CanvasPanel({
                             >
                               {snapshot.url}
                             </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : browserViewMode === 'search-urls' ? (
+                /* 搜索 URL 列表模式 */
+                <div className="p-4">
+                  {searchUrlLists.length === 0 ? (
+                    <div className="flex items-center justify-center h-full text-gray-400">
+                      <div className="text-center">
+                        <List className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                        <p>{t('canvas.noSearchResults')}</p>
+                        <p className="text-sm mt-2">{t('canvas.searchResultsHint')}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* 反转数组，最新的搜索结果在最前面 */}
+                      {[...searchUrlLists].reverse().map((searchList, index) => (
+                        <div key={searchList.id} className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+                          {/* 搜索标题 */}
+                          <div className="bg-gray-100 dark:bg-gray-800 px-3 py-2 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                              <Globe className="w-4 h-4 text-gray-500" />
+                              <span className="text-sm font-medium dark:text-white">
+                                {t('canvas.searchQuery')}: {searchList.query}
+                              </span>
+                              {index === 0 && (
+                                <span className="px-2 py-0.5 text-xs bg-primary-500 text-white rounded-full">
+                                  {t('canvas.latest')}
+                                </span>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {searchList.urls.length} {t('canvas.results')}
+                              </span>
+                              <span className="text-xs text-gray-500 dark:text-gray-400">
+                                {new Date(searchList.timestamp).toLocaleTimeString()}
+                              </span>
+                            </div>
+                          </div>
+                          {/* URL 列表 */}
+                          <div className="divide-y divide-gray-100 dark:divide-gray-700">
+                            {searchList.urls.map((item, urlIndex) => (
+                              <div
+                                key={urlIndex}
+                                className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                              >
+                                <div className="flex items-start gap-2">
+                                  <span className="text-xs text-gray-400 mt-0.5 flex-shrink-0">
+                                    {urlIndex + 1}.
+                                  </span>
+                                  <div className="flex-1 min-w-0">
+                                    <a
+                                      href={item.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="text-sm text-primary-600 dark:text-primary-400 hover:text-primary-700 dark:hover:text-primary-300 font-medium line-clamp-2"
+                                    >
+                                      {item.title || item.url}
+                                    </a>
+                                    <p className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                      {item.url}
+                                    </p>
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      setLivePreviewUrl(item.url);
+                                      setBrowserViewMode('live');
+                                      setIframeError(false);
+                                    }}
+                                    className="p-1 hover:bg-gray-200 dark:hover:bg-gray-700 rounded transition-colors flex-shrink-0"
+                                    title={t('canvas.previewInPanel')}
+                                  >
+                                    <ExternalLink className="w-3.5 h-3.5 text-gray-500" />
+                                  </button>
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       ))}
@@ -611,6 +739,12 @@ export function CanvasPanel({
             {/* 滚动锚点 - 用于自动滚动到底部 */}
             <div ref={terminalEndRef} />
           </div>
+        ) : mode === 'email' ? (
+          /* 邮箱标签页 */
+          <EmailPanel
+            onAddEmailReference={onAddEmailReference}
+            onSendProgrammatic={onSendProgrammatic}
+          />
         ) : null}
       </div>
 

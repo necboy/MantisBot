@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Settings, AlertCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { authFetch } from '../utils/auth';
 
 interface Model {
@@ -24,6 +25,7 @@ function isModelValid(model: Model): boolean {
 }
 
 export function ModelConfigPrompt({ onClose, onOpenSettings }: ModelConfigPromptProps) {
+  const { t } = useTranslation();
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* 背景遮罩 */}
@@ -40,12 +42,12 @@ export function ModelConfigPrompt({ onClose, onOpenSettings }: ModelConfigPrompt
 
         {/* 标题 */}
         <h2 className="text-xl font-bold text-center text-gray-900 dark:text-gray-100 mb-2">
-          欢迎使用 MantisBot
+          {t('modelPrompt.welcome')}
         </h2>
 
         {/* 描述 */}
         <p className="text-gray-600 dark:text-gray-400 text-center mb-6">
-          尚未配置有效的 AI 模型，请先配置模型以正常使用。
+          {t('modelPrompt.noModel')}
         </p>
 
         {/* 操作按钮 */}
@@ -57,14 +59,14 @@ export function ModelConfigPrompt({ onClose, onOpenSettings }: ModelConfigPrompt
             }}
             className="flex-1 px-4 py-2 text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
           >
-            稍后再说
+            {t('modelPrompt.later')}
           </button>
           <button
             onClick={onOpenSettings}
             className="flex-1 flex items-center justify-center gap-2 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors"
           >
             <Settings className="w-4 h-4" />
-            立即配置
+            {t('modelPrompt.configure')}
           </button>
         </div>
       </div>

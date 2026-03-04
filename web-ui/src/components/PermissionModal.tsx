@@ -194,7 +194,7 @@ const PermissionModal: React.FC<PermissionModalProps> = ({
                   {t('permission.askQuestion')}
                 </h3>
                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Claude 需要您提供一些信息
+                  {t('permission.claudeNeedsInfo')}
                 </p>
               </div>
             </div>
@@ -261,14 +261,14 @@ const PermissionModal: React.FC<PermissionModalProps> = ({
               disabled={isSubmitting}
               className="px-4 py-2 text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              跳过
+              {t('permission.skip')}
             </button>
             <button
               onClick={handleSubmitAnswers}
               disabled={!allAnswered || isSubmitting}
               className="px-4 py-2 text-white bg-purple-600 hover:bg-purple-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {isSubmitting ? '提交中...' : '提交答案'}
+              {isSubmitting ? t('permission.submitting') : t('permission.submitAnswers')}
             </button>
           </div>
         </div>

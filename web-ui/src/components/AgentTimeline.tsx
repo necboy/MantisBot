@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 
 interface AgentInvocationStatus {
   agentName: string;
@@ -39,6 +40,7 @@ const COLOR_POOL = [
 ];
 
 export function AgentTimeline({ invocations }: AgentTimelineProps) {
+  const { t } = useTranslation();
   // 按首次出现顺序给每个 agent 名称分配颜色索引
   const agentColorIndex = useMemo(() => {
     const map = new Map<string, number>();
@@ -58,16 +60,16 @@ export function AgentTimeline({ invocations }: AgentTimelineProps) {
       {/* 标题栏 */}
       <div className="flex items-center gap-2 px-3 py-2 border-b border-purple-200 dark:border-purple-800/60">
         <span className="text-purple-600 dark:text-purple-400 text-xs">⬡</span>
-        <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">Agent 团队执行</span>
+        <span className="text-xs font-semibold text-purple-700 dark:text-purple-300">{t('agentTimeline.title')}</span>
         <div className="flex items-center gap-1.5 ml-auto">
           {runningCount > 0 && (
             <span className="flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400">
               <span className="inline-block w-2 h-2 border border-purple-500 border-t-transparent rounded-full animate-spin" />
-              {runningCount} 运行中
+              {runningCount} {t('agentTimeline.running')}
             </span>
           )}
           {doneCount > 0 && (
-            <span className="text-xs text-gray-400 dark:text-gray-500">{doneCount} 已完成</span>
+            <span className="text-xs text-gray-400 dark:text-gray-500">{doneCount} {t('agentTimeline.done')}</span>
           )}
         </div>
       </div>
@@ -106,7 +108,7 @@ export function AgentTimeline({ invocations }: AgentTimelineProps) {
 
                   {/* 状态 */}
                   {inv.phase === 'running' ? (
-                    <span className="text-xs text-gray-400 dark:text-gray-500 italic">处理中…</span>
+                    <span className="text-xs text-gray-400 dark:text-gray-500 italic">{t('agentTimeline.processing')}</span>
                   ) : (
                     <span className="text-xs text-emerald-600 dark:text-emerald-400">✓</span>
                   )}

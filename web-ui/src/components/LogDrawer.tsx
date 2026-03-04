@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Terminal, X, Trash2, ChevronDown, ChevronUp, Circle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export interface LogEntry {
   id: string;
@@ -36,6 +37,7 @@ function formatTime(ts: number): string {
 }
 
 export function LogDrawer({ isOpen, onClose, entries, onClear }: LogDrawerProps) {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState<'agent' | 'system'>('agent');
   const [filter, setFilter] = useState('');
   const [autoScroll, setAutoScroll] = useState(true);
@@ -103,7 +105,7 @@ export function LogDrawer({ isOpen, onClose, entries, onClear }: LogDrawerProps)
       {/* 标题栏 */}
       <div className="flex items-center gap-2 px-3 h-9 min-h-[36px] border-b border-gray-200 dark:border-gray-700 select-none">
         <Terminal size={14} className="text-gray-500 dark:text-gray-400 flex-shrink-0" />
-        <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 mr-1">运行日志</span>
+        <span className="text-xs font-semibold text-gray-600 dark:text-gray-300 mr-1">{t('log.title')}</span>
 
         {/* Tabs */}
         {!isMinimized && (
@@ -129,7 +131,7 @@ export function LogDrawer({ isOpen, onClose, entries, onClear }: LogDrawerProps)
                   : 'text-gray-500 hover:text-gray-700 dark:hover:text-gray-300'
               }`}
             >
-              系统
+              {t('log.system')}
               {systemCount > 0 && (
                 <span className="ml-1 text-xs opacity-60">{systemCount}</span>
               )}
@@ -140,21 +142,21 @@ export function LogDrawer({ isOpen, onClose, entries, onClear }: LogDrawerProps)
               type="text"
               value={filter}
               onChange={e => setFilter(e.target.value)}
-              placeholder="过滤日志..."
+              placeholder={t('log.filter')}
               className="ml-2 text-xs px-2 py-0.5 rounded border border-gray-200 dark:border-gray-600 bg-transparent text-gray-700 dark:text-gray-300 placeholder-gray-400 focus:outline-none focus:border-blue-400 w-32"
             />
 
             {/* 自动滚动 */}
             <button
               onClick={() => setAutoScroll(v => !v)}
-              title={autoScroll ? '关闭自动滚动' : '开启自动滚动'}
+              title={autoScroll ? t('log.autoScrollOff') : t('log.autoScrollOn')}
               className={`text-xs px-2 py-0.5 rounded transition-colors ml-1 ${
                 autoScroll
                   ? 'text-blue-600 dark:text-blue-400'
                   : 'text-gray-400'
               }`}
             >
-              ↓自动
+              ↓{t('log.autoScroll')}
             </button>
           </>
         )}
@@ -163,7 +165,7 @@ export function LogDrawer({ isOpen, onClose, entries, onClear }: LogDrawerProps)
           {!isMinimized && (
             <button
               onClick={onClear}
-              title="清空日志"
+              title={t('log.clear')}
               className="p-1 rounded hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
             >
               <Trash2 size={12} />
@@ -197,7 +199,7 @@ export function LogDrawer({ isOpen, onClose, entries, onClear }: LogDrawerProps)
         >
           {filtered.length === 0 ? (
             <div className="flex items-center justify-center h-full text-gray-400 text-xs">
-              暂无日志
+              {t('log.noLogs')}
             </div>
           ) : (
             filtered.map(entry => (

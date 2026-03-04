@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Play, Pause, Trash2, Plus, Clock, RefreshCw, CheckCircle, AlertCircle, Pencil } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { authFetch } from '../utils/auth';
 
 interface CronJob {
@@ -56,6 +57,7 @@ const defaultFormData = {
 };
 
 export function CronPanel({ isOpen, onClose }: CronPanelProps) {
+  const { t } = useTranslation();
   const [jobs, setJobs] = useState<CronJob[]>([]);
   const [loading, setLoading] = useState(false);
   const [runningJobId, setRunningJobId] = useState<string | null>(null);
@@ -136,7 +138,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
   }
 
   async function removeJob(job: CronJob) {
-    if (!confirm(`确定删除任务 "${job.name}"？`)) return;
+    if (!confirm(t('cron.confirmDelete', { name: job.name }))) return;
     try {
       await authFetch('/api/cron/remove', {
         method: 'POST',
@@ -249,7 +251,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
 
   function formatNextRun(ms?: number) {
     if (!ms) return '-';
-    return new Date(ms).toLocaleString('zh-CN');
+    return new Date(ms).toLocaleString();
   }
 
   if (!isOpen) return null;
@@ -259,7 +261,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
       <div className="bg-white dark:bg-gray-900 rounded-lg w-full max-w-4xl max-h-[90vh] overflow-hidden flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-bold">定时任务管理</h2>
+          <h2 className="text-xl font-bold">{t('cron.title')}</h2>
           <div className="flex items-center gap-2">
             <button onClick={loadJobs} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
               <RefreshCw className="w-5 h-5" />
@@ -273,7 +275,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto p-4">
           {loading ? (
-            <div className="text-center text-gray-500">加载中...</div>
+            <div className="text-center text-gray-500">{t('cron.loading')}</div>
           ) : (
             <div className="space-y-4">
               {/* Job List */}
@@ -288,7 +290,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                             ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300'
                             : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
                         }`}>
-                          {job.enabled ? '已启用' : '已禁用'}
+                          {job.enabled ? t('cron.enabled') : t('cron.disabled')}
                         </span>
                         {job.state.lastStatus && (
                           <span className={`text-xs px-2 py-1 rounded ${
@@ -308,7 +310,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                         {/* skills 标签 */}
                         {job.payload.kind === 'agentTurn' && job.payload.skills && job.payload.skills.length > 0 && (
                           <span className="text-xs px-2 py-1 rounded bg-yellow-100 text-yellow-700 dark:bg-yellow-900 dark:text-yellow-300">
-                            {job.payload.skills.length} 个 Skill
+                            {job.payload.skills.length} {t('cron.skillsCount', { count: job.payload.skills.length }).replace(/^\d+ /, '')}
                           </span>
                         )}
                       </div>
@@ -318,7 +320,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                       <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
                         <div className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          <span>下次运行: {formatNextRun(job.state.nextRunAtMs)}</span>
+                          <span>{t('cron.nextRun', { time: formatNextRun(job.state.nextRunAtMs) })}</span>
                         </div>
                       </div>
                     </div>
@@ -327,7 +329,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                         onClick={() => runJob(job)}
                         disabled={runningJobId === job.id}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded disabled:opacity-50"
-                        title="立即运行"
+                        title={t('cron.runNow')}
                       >
                         {runningJobId === job.id ? (
                           <RefreshCw className="w-4 h-4 animate-spin" />
@@ -342,21 +344,21 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                       <button
                         onClick={() => openEditForm(job)}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
-                        title="编辑"
+                        title={t('cron.edit')}
                       >
                         <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => toggleJob(job)}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
-                        title={job.enabled ? '禁用' : '启用'}
+                        title={job.enabled ? t('cron.disable') : t('cron.enable')}
                       >
                         {job.enabled ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                       </button>
                       <button
                         onClick={() => removeJob(job)}
                         className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded text-red-500"
-                        title="删除"
+                        title={t('cron.delete')}
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -372,17 +374,17 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                   className="w-full py-3 border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg flex items-center justify-center gap-2 hover:border-primary-500 transition-colors"
                 >
                   <Plus className="w-5 h-5" />
-                  创建新任务
+                  {t('cron.createNew')}
                 </button>
               )}
 
               {/* Create / Edit Form */}
               {showForm && (
                 <form onSubmit={submitJob} className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-4">
-                  <h3 className="font-medium">{editingJob ? '编辑定时任务' : '创建定时任务'}</h3>
+                  <h3 className="font-medium">{editingJob ? t('cron.editTitle') : t('cron.createTitle')}</h3>
 
                   <div>
-                    <label className="block text-sm font-medium mb-1">任务名称</label>
+                    <label className="block text-sm font-medium mb-1">{t('cron.fieldName')}</label>
                     <input
                       type="text"
                       value={formData.name}
@@ -393,7 +395,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-1">描述</label>
+                    <label className="block text-sm font-medium mb-1">{t('cron.fieldDesc')}</label>
                     <input
                       type="text"
                       value={formData.description}
@@ -403,22 +405,22 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                   </div>
 
                   <div>
-                    <label className="block text-sm font-medium mb-1">调度方式</label>
+                    <label className="block text-sm font-medium mb-1">{t('cron.fieldSchedule')}</label>
                     <select
                       value={formData.scheduleKind}
                       onChange={e => setFormData({ ...formData, scheduleKind: e.target.value as any })}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
                     >
-                      <option value="cron">Cron 表达式</option>
-                      <option value="every">间隔执行</option>
-                      <option value="at">指定时间</option>
+                      <option value="cron">{t('cron.scheduleKindCron')}</option>
+                      <option value="every">{t('cron.scheduleKindEvery')}</option>
+                      <option value="at">{t('cron.scheduleKindAt')}</option>
                     </select>
                   </div>
 
                   {formData.scheduleKind === 'cron' && (
                     <>
                       <div>
-                        <label className="block text-sm font-medium mb-1">Cron 表达式</label>
+                        <label className="block text-sm font-medium mb-1">{t('cron.fieldCronExpr')}</label>
                         <input
                           type="text"
                           value={formData.cronExpr}
@@ -428,7 +430,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium mb-1">时区</label>
+                        <label className="block text-sm font-medium mb-1">{t('cron.fieldTimezone')}</label>
                         <input
                           type="text"
                           value={formData.cronTz}
@@ -442,7 +444,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                   {formData.scheduleKind === 'every' && (
                     <div className="flex gap-2">
                       <div className="flex-1">
-                        <label className="block text-sm font-medium mb-1">间隔</label>
+                        <label className="block text-sm font-medium mb-1">{t('cron.fieldInterval')}</label>
                         <input
                           type="number"
                           value={formData.everyAmount}
@@ -452,15 +454,15 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                         />
                       </div>
                       <div className="flex-1">
-                        <label className="block text-sm font-medium mb-1">单位</label>
+                        <label className="block text-sm font-medium mb-1">{t('cron.fieldUnit')}</label>
                         <select
                           value={formData.everyUnit}
                           onChange={e => setFormData({ ...formData, everyUnit: e.target.value as any })}
                           className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
                         >
-                          <option value="minutes">分钟</option>
-                          <option value="hours">小时</option>
-                          <option value="days">天</option>
+                          <option value="minutes">{t('cron.unitMinutes')}</option>
+                          <option value="hours">{t('cron.unitHours')}</option>
+                          <option value="days">{t('cron.unitDays')}</option>
                         </select>
                       </div>
                     </div>
@@ -468,7 +470,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
 
                   {formData.scheduleKind === 'at' && (
                     <div>
-                      <label className="block text-sm font-medium mb-1">执行时间</label>
+                      <label className="block text-sm font-medium mb-1">{t('cron.fieldRunAt')}</label>
                       <input
                         type="datetime-local"
                         value={formData.scheduleAt}
@@ -479,20 +481,20 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                   )}
 
                   <div>
-                    <label className="block text-sm font-medium mb-1">任务类型</label>
+                    <label className="block text-sm font-medium mb-1">{t('cron.fieldTaskType')}</label>
                     <select
                       value={formData.payloadKind}
                       onChange={e => setFormData({ ...formData, payloadKind: e.target.value as any })}
                       className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
                     >
-                      <option value="agentTurn">Agent 消息</option>
-                      <option value="systemEvent">用户通知</option>
+                      <option value="agentTurn">{t('cron.taskTypeAgent')}</option>
+                      <option value="systemEvent">{t('cron.taskTypeNotify')}</option>
                     </select>
                   </div>
 
                   <div>
                     <label className="block text-sm font-medium mb-1">
-                      {formData.payloadKind === 'agentTurn' ? '消息内容' : '通知内容'}
+                      {formData.payloadKind === 'agentTurn' ? t('cron.fieldContent') : t('cron.fieldNotifyContent')}
                     </label>
                     <textarea
                       value={formData.payloadText}
@@ -506,13 +508,13 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                   {/* 模型选择（仅 Agent 消息） */}
                   {formData.payloadKind === 'agentTurn' && (
                     <div>
-                      <label className="block text-sm font-medium mb-1">执行模型</label>
+                      <label className="block text-sm font-medium mb-1">{t('cron.fieldModel')}</label>
                       <select
                         value={formData.model}
                         onChange={e => setFormData({ ...formData, model: e.target.value })}
                         className="w-full px-3 py-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-gray-800"
                       >
-                        <option value="">使用系统默认模型</option>
+                        <option value="">{t('cron.defaultModel')}</option>
                         {availableModels.map(m => (
                           <option key={m.name} value={m.name}>{m.name}</option>
                         ))}
@@ -524,9 +526,9 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                   {formData.payloadKind === 'agentTurn' && availableSkills.length > 0 && (
                     <div>
                       <label className="block text-sm font-medium mb-2">
-                        启用 Skills
+                        {t('cron.fieldSkills')}
                         <span className="ml-2 font-normal text-gray-500 dark:text-gray-400">
-                          （未选择则禁用所有 Skill）
+                          {t('cron.fieldSkillsHint')}
                         </span>
                       </label>
                       <div className="flex flex-wrap gap-2 max-h-40 overflow-y-auto p-2 border border-gray-200 dark:border-gray-700 rounded-lg">
@@ -547,7 +549,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                         ))}
                       </div>
                       {formData.skills.length > 0 && (
-                        <p className="mt-1 text-xs text-gray-500">已选 {formData.skills.length} 个</p>
+                        <p className="mt-1 text-xs text-gray-500">{t('cron.selectedSkills', { count: formData.skills.length })}</p>
                       )}
                     </div>
                   )}
@@ -559,7 +561,7 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                       onChange={e => setFormData({ ...formData, enabled: e.target.checked })}
                       id="enabled"
                     />
-                    <label htmlFor="enabled" className="text-sm">立即启用</label>
+                    <label htmlFor="enabled" className="text-sm">{t('cron.fieldEnabled')}</label>
                   </div>
 
                   <div className="flex gap-2">
@@ -567,14 +569,14 @@ export function CronPanel({ isOpen, onClose }: CronPanelProps) {
                       type="submit"
                       className="flex-1 px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700"
                     >
-                      {editingJob ? '保存修改' : '创建任务'}
+                      {editingJob ? t('cron.saveEdit') : t('cron.saveCreate')}
                     </button>
                     <button
                       type="button"
                       onClick={closeForm}
                       className="px-4 py-2 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800"
                     >
-                      取消
+                      {t('cron.cancel')}
                     </button>
                   </div>
                 </form>

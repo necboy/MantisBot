@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Save, Loader2, AlertCircle, ChevronRight } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 interface Skill {
   name: string;
@@ -18,6 +19,7 @@ interface SkillEditorPanelProps {
 }
 
 export function SkillEditorPanel({ skill, onClose, onLoadFiles, onLoadContent, onSaveContent }: SkillEditorPanelProps) {
+  const { t } = useTranslation();
   const [files, setFiles] = useState<string[]>([]);
   const [selectedFile, setSelectedFile] = useState('');
   const [content, setContent] = useState('');
@@ -70,7 +72,7 @@ export function SkillEditorPanel({ skill, onClose, onLoadFiles, onLoadContent, o
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 2000);
     } else {
-      setSaveError('保存失败，请重试');
+      setSaveError(t('skillEditor.saveFailed'));
     }
     setSaving(false);
   }
@@ -92,19 +94,19 @@ export function SkillEditorPanel({ skill, onClose, onLoadFiles, onLoadContent, o
           </span>
           {isDirty && (
             <span className="text-xs px-1.5 py-0.5 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 rounded flex-shrink-0">
-              未保存
+              {t('skillEditor.unsaved')}
             </span>
           )}
           {saveSuccess && (
             <span className="text-xs px-1.5 py-0.5 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 rounded flex-shrink-0">
-              已保存 ✓
+              {t('skillEditor.saved')}
             </span>
           )}
         </div>
         <button
           onClick={onClose}
           className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors ml-2 flex-shrink-0"
-          title="关闭编辑器"
+          title={t('skillEditor.close')}
         >
           <X className="w-4 h-4" />
         </button>
@@ -151,7 +153,7 @@ export function SkillEditorPanel({ skill, onClose, onLoadFiles, onLoadContent, o
               onChange={e => setContent(e.target.value)}
               className="flex-1 w-full p-4 font-mono text-xs resize-none bg-transparent text-gray-900 dark:text-gray-100 focus:outline-none"
               spellCheck={false}
-              placeholder="文件内容..."
+              placeholder={t('skillEditor.placeholder')}
             />
           )}
         </div>
@@ -173,7 +175,7 @@ export function SkillEditorPanel({ skill, onClose, onLoadFiles, onLoadContent, o
           className="flex items-center gap-1.5 px-3 py-1.5 text-xs bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors ml-4 flex-shrink-0"
         >
           {saving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Save className="w-3.5 h-3.5" />}
-          保存
+          {t('skillEditor.save')}
         </button>
       </div>
     </div>

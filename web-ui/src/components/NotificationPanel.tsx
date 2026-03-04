@@ -1,4 +1,5 @@
 import { X, Bell } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 
 export interface Notification {
   sessionId: string;
@@ -18,6 +19,7 @@ interface NotificationPanelProps {
 }
 
 export function NotificationPanel({ isOpen, onClose, notifications, onItemClick }: NotificationPanelProps) {
+  const { t } = useTranslation();
   if (!isOpen) return null;
 
   function formatTime(timestamp: number) {
@@ -25,16 +27,12 @@ export function NotificationPanel({ isOpen, onClose, notifications, onItemClick 
     const now = new Date();
     const diff = now.getTime() - timestamp;
 
-    // 小于1分钟
-    if (diff < 60000) return '刚刚';
-    // 小于1小时
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
-    // 小于24小时
-    if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
-    // 小于7天
-    if (diff < 604800000) return `${Math.floor(diff / 86400000)}天前`;
+    if (diff < 60000) return t('notification.justNow');
+    if (diff < 3600000) return t('notification.minutesAgo', { n: Math.floor(diff / 60000) });
+    if (diff < 86400000) return t('notification.hoursAgo', { n: Math.floor(diff / 3600000) });
+    if (diff < 604800000) return t('notification.daysAgo', { n: Math.floor(diff / 86400000) });
 
-    return date.toLocaleDateString('zh-CN');
+    return date.toLocaleDateString();
   }
 
   return (
@@ -49,7 +47,7 @@ export function NotificationPanel({ isOpen, onClose, notifications, onItemClick 
       <div className="fixed top-0 right-0 h-full w-80 bg-white dark:bg-gray-900 shadow-lg z-50 flex flex-col">
         {/* 头部 */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h3 className="font-semibold text-lg">定时任务通知</h3>
+          <h3 className="font-semibold text-lg">{t('notification.cronNotification')}</h3>
           <button
             onClick={onClose}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
@@ -63,7 +61,7 @@ export function NotificationPanel({ isOpen, onClose, notifications, onItemClick 
           {notifications.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-gray-500">
               <Bell className="w-12 h-12 mb-2 opacity-50" />
-              <p>暂无通知</p>
+              <p>{t('notification.noNotifications')}</p>
             </div>
           ) : (
             <div className="divide-y divide-gray-100 dark:divide-gray-800">

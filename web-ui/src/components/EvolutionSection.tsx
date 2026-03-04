@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Check, X, RefreshCw, FileText, Clock, User } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { authFetch } from '../utils/auth';
 
 interface EvolutionProposal {
@@ -16,6 +17,7 @@ interface EvolutionProposal {
 type FilterStatus = 'all' | 'pending' | 'approved' | 'rejected';
 
 export function EvolutionSection() {
+  const { t } = useTranslation();
   const [proposals, setProposals] = useState<EvolutionProposal[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
@@ -64,7 +66,7 @@ export function EvolutionSection() {
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
-    return date.toLocaleString('zh-CN', {
+    return date.toLocaleString(undefined, {
       month: '2-digit',
       day: '2-digit',
       hour: '2-digit',
@@ -79,9 +81,9 @@ export function EvolutionSection() {
       rejected: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
     };
     const labels = {
-      pending: '待确认',
-      approved: '已同意',
-      rejected: '已拒绝',
+      pending: t('evolution.statusPending'),
+      approved: t('evolution.statusApproved'),
+      rejected: t('evolution.statusRejected'),
     };
     return (
       <span className={`px-2 py-0.5 text-xs rounded-full ${styles[status]}`}>
@@ -105,16 +107,16 @@ export function EvolutionSection() {
             onChange={(e) => setFilterStatus(e.target.value as FilterStatus)}
             className="px-2 py-1 text-sm border border-gray-300 dark:border-gray-600 rounded bg-white dark:bg-gray-800"
           >
-            <option value="all">全部</option>
-            <option value="pending">待确认</option>
-            <option value="approved">已同意</option>
-            <option value="rejected">已拒绝</option>
+            <option value="all">{t('evolution.statusAll')}</option>
+            <option value="pending">{t('evolution.statusPending')}</option>
+            <option value="approved">{t('evolution.statusApproved')}</option>
+            <option value="rejected">{t('evolution.statusRejected')}</option>
           </select>
           <button
             onClick={fetchProposals}
             disabled={loading}
             className="p-1.5 text-gray-500 hover:text-gray-700 dark:hover:text-gray-300"
-            title="刷新"
+            title={t('evolution.refresh')}
           >
             <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
@@ -124,8 +126,7 @@ export function EvolutionSection() {
         <div className="flex-1 overflow-y-auto">
           {filteredProposals.length === 0 ? (
             <div className="p-4 text-center text-gray-500 text-sm">
-              暂无演变提议
-            </div>
+              {t('evolution.noProposals')}</div>
           ) : (
             filteredProposals
               .sort((a, b) => b.createdAt - a.createdAt)
@@ -173,7 +174,7 @@ export function EvolutionSection() {
                 {getStatusBadge(selectedProposal.status)}
               </div>
               <div className="text-xs text-gray-500">
-                创建于 {new Date(selectedProposal.createdAt).toLocaleString('zh-CN')}
+                {t('evolution.createdAt', { time: new Date(selectedProposal.createdAt).toLocaleString() })}
               </div>
             </div>
 
@@ -182,7 +183,7 @@ export function EvolutionSection() {
               {/* 修改理由 */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  修改理由
+                  {t('evolution.reason')}
                 </h4>
                 <div className="p-3 bg-gray-50 dark:bg-gray-800 rounded text-sm text-gray-600 dark:text-gray-400">
                   {selectedProposal.reason}
@@ -192,16 +193,16 @@ export function EvolutionSection() {
               {/* 当前内容 vs 提议内容 */}
               <div>
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  当前内容
+                  {t('evolution.currentContent')}
                 </h4>
                 <pre className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded text-xs text-gray-600 dark:text-gray-400 overflow-x-auto whitespace-pre-wrap max-h-32">
-                  {selectedProposal.currentContent || '(空)'}
+                  {selectedProposal.currentContent || t('evolution.empty')}
                 </pre>
               </div>
 
               <div>
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  提议内容
+                  {t('evolution.proposedContent')}
                 </h4>
                 <pre className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded text-xs text-gray-600 dark:text-gray-400 overflow-x-auto whitespace-pre-wrap max-h-32">
                   {selectedProposal.proposedContent}
@@ -217,21 +218,21 @@ export function EvolutionSection() {
                   className="flex items-center gap-1 px-4 py-2 text-sm bg-red-100 text-red-700 hover:bg-red-200 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50 rounded"
                 >
                   <X className="w-4 h-4" />
-                  拒绝
+                  {t('evolution.reject')}
                 </button>
                 <button
                   onClick={() => handleApprove(selectedProposal.id)}
                   className="flex items-center gap-1 px-4 py-2 text-sm bg-green-100 text-green-700 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-400 dark:hover:bg-green-900/50 rounded"
                 >
                   <Check className="w-4 h-4" />
-                  批准
+                  {t('evolution.approve')}
                 </button>
               </div>
             )}
           </>
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-500">
-            选择一个提议查看详情
+            {t('evolution.selectHint')}
           </div>
         )}
       </div>

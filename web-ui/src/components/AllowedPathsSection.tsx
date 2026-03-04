@@ -1,9 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Plus, Trash2, FolderOpen, AlertCircle, Info } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { authFetch } from '../utils/auth';
 import { cachedFetch, invalidateCache } from '../utils/configCache';
 
 export function AllowedPathsSection() {
+  const { t } = useTranslation();
   const [allowedPaths, setAllowedPaths] = useState<string[]>([]);
   const [newPath, setNewPath] = useState('');
   const [loading, setLoading] = useState(false);
@@ -56,12 +58,12 @@ export function AllowedPathsSection() {
 
     const path = newPath.trim();
     if (!path.startsWith('/')) {
-      alert('请输入绝对路径（如 /home/user/documents）');
+      alert(t('allowedPaths.invalidPath'));
       return;
     }
 
     if (allowedPaths.includes(path)) {
-      alert('该路径已存在');
+      alert(t('allowedPaths.pathExists'));
       return;
     }
 
@@ -80,7 +82,7 @@ export function AllowedPathsSection() {
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
-        <div className="text-gray-500">加载中...</div>
+        <div className="text-gray-500">{t('allowedPaths.loading')}</div>
       </div>
     );
   }
@@ -92,10 +94,10 @@ export function AllowedPathsSection() {
         <div className="flex items-start gap-3">
           <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-blue-800 dark:text-blue-300">
-            <p className="font-medium mb-1">配置允许访问的目录</p>
-            <p>在此添加目录后，Agent 将能够读取、写入和执行这些目录中的文件。</p>
+            <p className="font-medium mb-1">{t('allowedPaths.title')}</p>
+            <p>{t('allowedPaths.description')}</p>
             <p className="mt-2 text-blue-600 dark:text-blue-400">
-              <strong>注意：</strong>添加目录后，需要在 docker-compose.yml 中手动添加对应的挂载配置，然后重启容器才能生效。
+              <strong>{t('allowedPaths.dockerNote').split('：')[0]}：</strong>{t('allowedPaths.dockerNote').split('：')[1]}
             </p>
           </div>
         </div>
@@ -108,7 +110,7 @@ export function AllowedPathsSection() {
           value={newPath}
           onChange={(e) => setNewPath(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && addPath()}
-          placeholder="输入绝对路径（如 /home/user/documents）"
+          placeholder={t('allowedPaths.placeholder')}
           className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500"
         />
         <button
@@ -117,7 +119,7 @@ export function AllowedPathsSection() {
           className="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
         >
           <Plus className="w-4 h-4" />
-          添加
+          {t('allowedPaths.add')}
         </button>
       </div>
 
@@ -126,8 +128,8 @@ export function AllowedPathsSection() {
         {allowedPaths.length === 0 ? (
           <div className="text-center py-8 text-gray-500 dark:text-gray-400">
             <FolderOpen className="w-12 h-12 mx-auto mb-3 opacity-50" />
-            <p>暂无配置的目录</p>
-            <p className="text-sm mt-1">在上方添加允许访问的目录</p>
+            <p>{t('allowedPaths.noData')}</p>
+            <p className="text-sm mt-1">{t('allowedPaths.noDataHint')}</p>
           </div>
         ) : (
           allowedPaths.map((path) => (
@@ -158,14 +160,14 @@ export function AllowedPathsSection() {
         <div className="flex items-start gap-3">
           <AlertCircle className="w-5 h-5 text-yellow-600 dark:text-yellow-400 flex-shrink-0 mt-0.5" />
           <div className="text-sm text-yellow-800 dark:text-yellow-300">
-            <p className="font-medium mb-2">Docker 挂载示例</p>
-            <p className="mb-2">在 docker-compose.yml 中添加：</p>
+            <p className="font-medium mb-2">{t('allowedPaths.dockerExample')}</p>
+            <p className="mb-2">{t('allowedPaths.dockerInstruction')}</p>
             <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded text-xs overflow-x-auto">
 {`volumes:
   - /home/user/documents:/app/host_docs:ro`}
             </pre>
             <p className="mt-2 text-yellow-700 dark:text-yellow-400">
-              修改后运行 <code className="bg-yellow-100 dark:bg-yellow-900 px-1 rounded">docker-compose down && docker-compose up -d</code> 重启服务
+              {t('allowedPaths.dockerRestart')}
             </p>
           </div>
         </div>
