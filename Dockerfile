@@ -38,6 +38,15 @@ RUN apt-get update && apt-get install -y \
 # 创建 Python 虚拟环境目录（用于持久化用户安装的包）
 RUN mkdir -p /app/python-venv
 
+# 配置 pip 全局使用清华镜像（加速国内下载）
+RUN mkdir -p /etc/pip && \
+    echo "[global]" > /etc/pip/pip.conf && \
+    echo "index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >> /etc/pip/pip.conf && \
+    echo "trusted-host = pypi.tuna.tsinghua.edu.cn" >> /etc/pip/pip.conf
+
+# 配置 npm 全局使用淘宝镜像（加速国内下载）
+RUN npm config set registry https://registry.npmmirror.com
+
 # 复制启动脚本
 COPY docker-entrypoint.sh /app/
 RUN chmod +x /app/docker-entrypoint.sh
@@ -69,7 +78,8 @@ RUN npm install -g firecrawl-cli
 # 使用系统 pip（不在 venv 中），确保 crawl4ai 命令全局可用
 # 注意：crawl4ai 内部的 Python playwright 与 Node.js playwright 版本不同，不能共用浏览器文件
 # 用独立路径 /app/.playwright-python 隔离，避免与 /app/.playwright（Node.js）冲突
-RUN pip3 install --no-cache-dir --break-system-packages crawl4ai && \
+# 增加 --timeout 参数避免网络超时
+RUN pip3 install --no-cache-dir --break-system-packages --timeout 600 crawl4ai && \
     PLAYWRIGHT_BROWSERS_PATH=/app/.playwright-python crawl4ai-setup
 
 # 备份内置 skills，供首次启动时初始化持久化卷
