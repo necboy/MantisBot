@@ -2533,7 +2533,7 @@ function App() {
         </div>
 
         {/* Input */}
-        <div className="p-2 md:p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
+        <div className="relative p-2 md:p-4 border-t border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-900">
           {/* 上下文引用标签（NAS 文件 + 邮件） */}
           <ContextReferenceTags
             references={fileReferences}
@@ -2684,6 +2684,19 @@ function App() {
               </div>
             </div>
           </form>
+
+          {/* Command Palette - 紧贴输入框上方 */}
+          {commandPaletteOpen && (
+            <CommandPalette
+              onSelect={(command) => {
+                setInput(command);
+                // 聚焦到输入框
+                const inputEl = document.querySelector('textarea') as HTMLTextAreaElement;
+                inputEl?.focus();
+              }}
+              onClose={() => setCommandPaletteOpen(false)}
+            />
+          )}
         </div>
         </main>
 
@@ -2775,19 +2788,6 @@ function App() {
             setModelConfigPromptOpen(false);
             setSettingsOpen(true);
           }}
-        />
-      )}
-
-      {/* Command Palette - 命令面板 */}
-      {commandPaletteOpen && (
-        <CommandPalette
-          onSelect={(command) => {
-            setInput(command);
-            // 聚焦到输入框
-            const inputEl = document.querySelector('textarea') as HTMLTextAreaElement;
-            inputEl?.focus();
-          }}
-          onClose={() => setCommandPaletteOpen(false)}
         />
       )}
 

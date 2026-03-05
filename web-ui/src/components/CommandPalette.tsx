@@ -20,6 +20,8 @@ export function CommandPalette({ onSelect, onClose }: CommandPaletteProps) {
   const [search, setSearch] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     // 获取命令列表
@@ -34,6 +36,24 @@ export function CommandPalette({ onSelect, onClose }: CommandPaletteProps) {
   useEffect(() => {
     inputRef.current?.focus();
   }, []);
+
+  // selectedIndex 变化时，让选中项滚入视野
+  useEffect(() => {
+    if (!listRef.current) return;
+    const selected = listRef.current.querySelector<HTMLElement>('[data-selected="true"]');
+    selected?.scrollIntoView({ block: 'nearest' });
+  }, [selectedIndex]);
+
+  // 点击面板外部时关闭
+  useEffect(() => {
+    const handleMouseDown = (e: MouseEvent) => {
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    document.addEventListener('mousedown', handleMouseDown);
+    return () => document.removeEventListener('mousedown', handleMouseDown);
+  }, [onClose]);
 
   const filteredCommands = commands.filter(cmd =>
     cmd.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -59,11 +79,10 @@ export function CommandPalette({ onSelect, onClose }: CommandPaletteProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-start justify-center pt-20 bg-black/50" onClick={onClose}>
-      <div
-        className="w-full max-w-lg bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden"
-        onClick={e => e.stopPropagation()}
-      >
+    <div
+      ref={panelRef}
+      className="absolute bottom-full left-0 right-0 z-50 mb-2 bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700"
+    >
         {/* 搜索框 */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-gray-200 dark:border-gray-700">
           <Search className="w-5 h-5 text-gray-400" />
@@ -82,7 +101,7 @@ export function CommandPalette({ onSelect, onClose }: CommandPaletteProps) {
         </div>
 
         {/* 命令列表 */}
-        <div className="max-h-80 overflow-y-auto">
+        <div ref={listRef} className="max-h-80 overflow-y-auto">
           {filteredCommands.length === 0 ? (
             <div className="px-4 py-8 text-center text-gray-500">
               {t('command.noResults', '没有找到匹配的命令')}
@@ -100,6 +119,7 @@ export function CommandPalette({ onSelect, onClose }: CommandPaletteProps) {
                 .map((cmd, idx) => (
                   <button
                     key={cmd.name}
+                    data-selected={selectedIndex === idx ? 'true' : 'false'}
                     className={`w-full px-4 py-2 flex items-center gap-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 ${
                       selectedIndex === idx ? 'bg-gray-100 dark:bg-gray-700' : ''
                     }`}
@@ -129,6 +149,7 @@ export function CommandPalette({ onSelect, onClose }: CommandPaletteProps) {
                   return (
                     <button
                       key={cmd.name}
+                      data-selected={selectedIndex === actualIndex ? 'true' : 'false'}
                       className={`w-full px-4 py-2 flex items-center gap-3 text-left hover:bg-gray-100 dark:hover:bg-gray-700 ${
                         selectedIndex === actualIndex ? 'bg-gray-100 dark:bg-gray-700' : ''
                       }`}
@@ -158,7 +179,6 @@ export function CommandPalette({ onSelect, onClose }: CommandPaletteProps) {
           <span>↵ {t('command.select', '选择')}</span>
           <span>esc {t('command.close', '关闭')}</span>
         </div>
-      </div>
     </div>
   );
 }
