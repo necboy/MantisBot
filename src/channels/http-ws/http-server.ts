@@ -911,6 +911,7 @@ export async function createHTTPServer(options: HTTPServerOptions) {
         // 新字段
         if ((m as any).protocol) model.protocol = (m as any).protocol;
         if ((m as any).provider) model.provider = (m as any).provider;
+        if ((m as any).enabled !== undefined) model.enabled = (m as any).enabled;
         // 向后兼容：也返回 type 字段
         model.type = (m as any).type || (m as any).protocol || 'openai';
         return model;
@@ -1443,6 +1444,30 @@ export async function createHTTPServer(options: HTTPServerOptions) {
     } catch (error) {
       console.error('[API] Failed to delete model:', error);
       res.status(500).json({ error: 'Failed to delete model' });
+    }
+  });
+
+  // POST /api/models/:name/toggle - Toggle model enabled state
+  app.post('/api/models/:name/toggle', async (req, res) => {
+    try {
+      const name = req.params.name;
+
+      // Find model
+      const model = config.models.find(m => m.name === name);
+      if (!model) {
+        res.status(404).json({ error: `Model "${name}" not found` });
+        return;
+      }
+
+      // Toggle enabled state (default to true if not set)
+      model.enabled = model.enabled === false ? true : false;
+
+      await saveConfig(config);
+
+      res.json({ success: true, model });
+    } catch (error) {
+      console.error('[API] Failed to toggle model:', error);
+      res.status(500).json({ error: 'Failed to toggle model' });
     }
   });
 

@@ -14,6 +14,7 @@ interface Model {
   baseUrl?: string;
   baseURL?: string;
   endpoint?: string;
+  enabled?: boolean;
 }
 
 // 获取提供商显示名称
@@ -106,6 +107,23 @@ export function ModelConfigSection() {
     }
   }
 
+  async function toggleModel(modelName: string) {
+    try {
+      setLoading(true);
+      const res = await authFetch(`/api/models/${encodeURIComponent(modelName)}/toggle`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('Failed to toggle model');
+      invalidateCache('/api/models');
+      await fetchModels();
+    } catch (err) {
+      console.error('Failed to toggle model:', err);
+      setError('Failed to toggle model');
+    } finally {
+      setLoading(false);
+    }
+  }
+
   function openAddModal() {
     setEditingModel(null);
     setModalOpen(true);
@@ -147,61 +165,91 @@ export function ModelConfigSection() {
         </div>
       ) : (
         <div className="space-y-3">
-          {models.map((model) => (
-            <div
-              key={model.name}
-              className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg"
-            >
-              <div className="flex-1">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-gray-900 dark:text-gray-100">
-                    {model.name}
-                  </span>
-                  {defaultModel === model.name && (
-                    <span className="px-2 py-0.5 text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded">
-                      默认
+          {[...models].sort((a, b) => {
+            // 默认模型排第一
+            if (a.name === defaultModel) return -1;
+            if (b.name === defaultModel) return 1;
+            return 0;
+          }).map((model) => {
+            const isDisabled = model.enabled === false;
+            return (
+              <div
+                key={model.name}
+                className={`flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg ${isDisabled ? 'opacity-50' : ''}`}
+              >
+                <div className="flex-1">
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium text-gray-900 dark:text-gray-100">
+                      {model.name}
                     </span>
-                  )}
+                    {defaultModel === model.name && (
+                      <span className="px-2 py-0.5 text-xs bg-primary-100 dark:bg-primary-900/30 text-primary-700 dark:text-primary-300 rounded">
+                        默认
+                      </span>
+                    )}
+                    {isDisabled && (
+                      <span className="px-2 py-0.5 text-xs bg-gray-300 dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded">
+                        已禁用
+                      </span>
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
+                    <span className="px-1.5 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 rounded">
+                      {getProviderDisplayName(model)}
+                    </span>
+                    <span className="text-gray-400">/</span>
+                    <span>{model.model}</span>
+                    <span className="text-gray-400">/</span>
+                    <span className="text-xs text-gray-400">
+                      {getProtocolDisplayName(model)} 协议
+                    </span>
+                  </div>
                 </div>
-                <div className="text-sm text-gray-500 dark:text-gray-400 mt-1 flex items-center gap-2">
-                  <span className="px-1.5 py-0.5 text-xs bg-gray-200 dark:bg-gray-700 rounded">
-                    {getProviderDisplayName(model)}
-                  </span>
-                  <span className="text-gray-400">/</span>
-                  <span>{model.model}</span>
-                  <span className="text-gray-400">/</span>
-                  <span className="text-xs text-gray-400">
-                    {getProtocolDisplayName(model)} 协议
-                  </span>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {defaultModel !== model.name && (
+                <div className="flex items-center gap-2">
+                  {/* Toggle Switch */}
                   <button
-                    onClick={() => setDefault(model.name)}
-                    className="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 transition-colors"
-                    title="设为默认"
+                    onClick={() => toggleModel(model.name)}
+                    disabled={loading}
+                    className={`w-10 h-5 rounded-full relative transition-colors ${
+                      !isDisabled
+                        ? 'bg-primary-600'
+                        : 'bg-gray-300 dark:bg-gray-700'
+                    } ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                    title={isDisabled ? '点击启用' : '点击禁用'}
                   >
-                    <Star className="w-4 h-4" />
+                    <div
+                      className={`w-4 h-4 bg-white rounded-full absolute top-0.5 transition-all ${
+                        !isDisabled ? 'right-0.5' : 'left-0.5'
+                      }`}
+                    />
                   </button>
-                )}
-                <button
-                  onClick={() => openEditModal(model)}
-                  className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
-                  title="编辑模型"
-                >
-                  <Edit2 className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => deleteModel(model.name)}
-                  className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
-                  title="删除模型"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
+                  {defaultModel !== model.name && (
+                    <button
+                      onClick={() => setDefault(model.name)}
+                      className="p-2 text-gray-500 hover:text-primary-600 dark:text-gray-400 dark:hover:text-primary-400 transition-colors"
+                      title="设为默认"
+                    >
+                      <Star className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    onClick={() => openEditModal(model)}
+                    className="p-2 text-gray-500 hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400 transition-colors"
+                    title="编辑模型"
+                  >
+                    <Edit2 className="w-4 h-4" />
+                  </button>
+                  <button
+                    onClick={() => deleteModel(model.name)}
+                    className="p-2 text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 transition-colors"
+                    title="删除模型"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                  </button>
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 

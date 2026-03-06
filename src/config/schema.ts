@@ -159,6 +159,8 @@ export const ModelConfigSchema = z.object({
   baseUrl: z.string().optional(),
   baseURL: z.string().optional(),
   endpoint: z.string().optional(),
+  // 是否启用（禁用后 UI 上灰显，但配置保留）- undefined 视为 true
+  enabled: z.boolean().optional(),
 });
 
 export const FeishuConfigSchema = z.object({

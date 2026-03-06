@@ -94,7 +94,7 @@ interface AgentTeam {
 }
 
 interface Config {
-  models: { name: string; type: string; model: string; protocol?: string }[];
+  models: { name: string; type: string; model: string; protocol?: string; enabled?: boolean }[];
   defaultModel?: string;
   officePreviewServer?: string;  // Office 文件预览服务器地址
 }
@@ -1098,9 +1098,14 @@ function App() {
       const data = await res.json();
       setConfig(data);
       if (data.models?.length > 0) {
-        // 优先使用 defaultModel，否则使用第一个模型
-        const defaultModelName = data.defaultModel || data.models[0].name;
-        setSelectedModel(defaultModelName);
+        // 过滤出启用的模型
+        const enabledModels = data.models.filter((m: any) => m.enabled !== false);
+        if (enabledModels.length > 0) {
+          // 优先使用 defaultModel（如果启用），否则使用第一个启用的模型
+          const defaultModelObj = enabledModels.find((m: any) => m.name === data.defaultModel);
+          const defaultModelName = defaultModelObj ? data.defaultModel : enabledModels[0].name;
+          setSelectedModel(defaultModelName);
+        }
       }
     } catch (e) {
       console.error('Failed to fetch config:', e);
@@ -2370,7 +2375,7 @@ function App() {
                 onChange={e => setSelectedModel(e.target.value)}
                 className="px-2 py-1.5 md:px-3 rounded-lg border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 text-sm max-w-[120px] md:max-w-none"
               >
-                {config.models.map(m => (
+                {config.models.filter(m => m.enabled !== false).map(m => (
                   <option key={m.name} value={m.name}>{m.name}</option>
                 ))}
               </select>
