@@ -94,12 +94,16 @@ push: push-backend push-webui ## 推送所有镜像到仓库
 push-backend: ## 推送后端镜像
 	@echo "📤 推送后端镜像: $(BACKEND_IMAGE):$(VERSION)"
 	docker push $(BACKEND_IMAGE):$(VERSION)
-	@echo "✅ 后端镜像推送完成"
+	docker tag $(BACKEND_IMAGE):$(VERSION) $(BACKEND_IMAGE):latest
+	docker push $(BACKEND_IMAGE):latest
+	@echo "✅ 后端镜像推送完成（含 latest）"
 
 push-webui: ## 推送 Web UI 镜像
 	@echo "📤 推送 Web UI 镜像: $(WEBUI_IMAGE):$(VERSION)"
 	docker push $(WEBUI_IMAGE):$(VERSION)
-	@echo "✅ Web UI 镜像推送完成"
+	docker tag $(WEBUI_IMAGE):$(VERSION) $(WEBUI_IMAGE):latest
+	docker push $(WEBUI_IMAGE):latest
+	@echo "✅ Web UI 镜像推送完成（含 latest）"
 
 tag-latest: ## 为当前版本打 latest 标签
 	@echo "🏷️  打 latest 标签"
@@ -111,20 +115,17 @@ tag-latest: ## 为当前版本打 latest 标签
 # 发布流程
 # ============================================
 
-release: bump-version buildx ## 完整发布流程，递增 patch 版本（1.0.0 → 1.0.1）
+release: bump-version ## 完整发布流程，递增 patch 版本（1.0.0 → 1.0.1）
+	$(MAKE) buildx
 	@echo "🚀 发布完成!"
-	@echo "   后端镜像: $(BACKEND_IMAGE):$(VERSION)"
-	@echo "   Web UI: $(WEBUI_IMAGE):$(VERSION)"
 
-release-minor: bump-minor buildx ## 发布 minor 版本（1.0.x → 1.1.0）
+release-minor: bump-minor ## 发布 minor 版本（1.0.x → 1.1.0）
+	$(MAKE) buildx
 	@echo "🚀 发布完成!"
-	@echo "   后端镜像: $(BACKEND_IMAGE):$(VERSION)"
-	@echo "   Web UI: $(WEBUI_IMAGE):$(VERSION)"
 
-release-major: bump-major buildx ## 发布 major 版本（1.x.x → 2.0.0）
+release-major: bump-major ## 发布 major 版本（1.x.x → 2.0.0）
+	$(MAKE) buildx
 	@echo "🚀 发布完成!"
-	@echo "   后端镜像: $(BACKEND_IMAGE):$(VERSION)"
-	@echo "   Web UI: $(WEBUI_IMAGE):$(VERSION)"
 
 bump-version: ## 递增 patch 版本号（1.0.0 → 1.0.1）
 	@node -e "\

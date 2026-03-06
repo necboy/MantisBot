@@ -6,6 +6,12 @@ COPY package*.json ./
 RUN npm ci
 
 COPY . .
+
+# 接收从 Makefile buildx-webui 传入的 VERSION build-arg，
+# 设置为环境变量供 vite.config.ts 读取，避免依赖上级目录的 package.json
+ARG VERSION=0.0.0
+ENV VERSION=${VERSION}
+
 RUN npm run build
 
 FROM nginx:alpine
